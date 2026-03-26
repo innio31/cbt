@@ -1094,7 +1094,8 @@ try {
                 <li><a href="view-results.php"><i class="fas fa-chart-bar"></i> View Results</a></li>
                 <li><a href="reports.php"><i class="fas fa-chart-line"></i> Reports</a></li>
                 <li><a href="report_card_dashboard.php"><i class="fas fa-cog"></i> Process Result</a></li>
-                <li><a href="central_dashboard.php"><i class="fas fa-cog"></i> Sync</a></li>
+                <li><a href="updater.php"><i class="fas fa-sync-alt"></i> System Update</a></li>
+                <li><a href="run_sql_update.php"><i class="fas fa-database"></i> SQL Update</a></li>
                 <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>

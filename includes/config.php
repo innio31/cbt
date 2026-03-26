@@ -143,3 +143,9 @@ function ensureCentralSettings()
 
 // Call this when including config
 ensureCentralSettings();
+
+// Define system version
+define('SYSTEM_VERSION', '1.0.0');
+
+// GitHub repository for updates
+define('GITHUB_REPO', 'innio/cbt'); // Change this

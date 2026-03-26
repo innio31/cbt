@@ -1,0 +1,38 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers when you push a tag like v1.0.0, v1.1.0, etc.
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Create ZIP archive
+        run: |
+          # Create a zip file, excluding unnecessary files/folders
+          zip -r cbt-system-${{ github.ref_name }}.zip . \
+            -x "*.git*" \
+            -x "*.github*" \
+            -x "backups/*" \
+            -x "uploads/*" \
+            -x "temp_update/*" \
+            -x "*.log" \
+            -x "*.sql" \
+            -x "node_modules/*" \
+            -x ".vscode/*"
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: cbt-system-${{ github.ref_name }}.zip
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
