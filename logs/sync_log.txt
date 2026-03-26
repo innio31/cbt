@@ -1,0 +1,2376 @@
+[2026-03-05 21:52:55] [ERROR] API key not configured
+[2026-03-05 21:53:19] [INFO] Testing connection to central server
+[2026-03-05 21:53:19] [ERROR] API key not configured
+[2026-03-05 21:53:19] [ERROR] API key not configured
+[2026-03-05 21:54:00] [INFO] Testing connection to central server
+[2026-03-05 21:54:00] [ERROR] API key not configured
+[2026-03-05 21:54:00] [ERROR] API key not configured
+[2026-03-05 21:57:41] [INFO] Testing connection to central server
+[2026-03-05 21:57:41] [ERROR] API key not configured
+[2026-03-05 21:57:41] [ERROR] API key not configured
+[2026-03-05 22:01:35] [INFO] Testing connection to central server
+[2026-03-05 22:01:35] [ERROR] API key not configured
+[2026-03-05 22:02:05] [INFO] Testing connection to central server
+[2026-03-05 22:02:05] [ERROR] API key not configured
+[2026-03-05 22:02:15] [INFO] Testing connection to central server
+[2026-03-05 22:02:15] [INFO] Calling API: https://impactdigitalacademy.com.ng/school-central/api/?action=auth
+[2026-03-05 22:02:18] [ERROR] HTTP Error: 401 - {"error":"API key required"}
+[2026-03-05 22:02:33] [INFO] Calling API: https://impactdigitalacademy.com.ng/school-central/api/?action=sync_status
+[2026-03-05 22:02:38] [ERROR] HTTP Error: 401 - {"error":"API key required"}
+[2026-03-05 22:02:43] [INFO] Testing connection to central server
+[2026-03-05 22:02:43] [INFO] Calling API: https://impactdigitalacademy.com.ng/school-central/api/?action=auth
+[2026-03-05 22:02:45] [ERROR] HTTP Error: 401 - {"error":"API key required"}
+[2026-03-05 22:02:45] [INFO] Calling API: https://impactdigitalacademy.com.ng/school-central/api/?action=sync_status
+[2026-03-05 22:02:47] [ERROR] HTTP Error: 401 - {"error":"API key required"}
+[2026-03-05 22:03:46] [INFO] Testing connection to central server
+[2026-03-05 22:03:46] [INFO] Calling API: https://impactdigitalacademy.com.ng/school-central/api/?action=auth
+[2026-03-05 22:03:49] [ERROR] HTTP Error: 401 - {"error":"API key required"}
+[2026-03-05 22:03:49] [INFO] Calling API: https://impactdigitalacademy.com.ng/school-central/api/?action=sync_status
+[2026-03-05 22:03:52] [ERROR] HTTP Error: 401 - {"error":"API key required"}
+[2026-03-05 22:06:29] [INFO] Testing connection to central server
+[2026-03-05 22:06:29] [INFO] Calling API: https://impactdigitalacademy.com.ng/school-central/api/?action=auth
+[2026-03-05 22:06:31] [ERROR] HTTP Error: 401 - {"error":"API key required"}
+[2026-03-05 22:06:47] [INFO] Testing connection to central server
+[2026-03-05 22:06:47] [INFO] Calling API: https://impactdigitalacademy.com.ng/school-centr/api/?action=auth
+[2026-03-05 22:06:52] [ERROR] HTTP Error: 404 - <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL was not found on this server.</p>
+<p>Additionally, a 404 Not Found
+error was encountered while trying to use an ErrorDocument to handle the request.</p>
+</body></html>
+
+[2026-03-05 22:09:01] [INFO] Testing connection to central server
+[2026-03-05 22:09:01] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=auth
+[2026-03-05 22:09:02] [ERROR] HTTP Error: 301 - <html>
+<head><title>301 Moved Permanently</title></head>
+<body>
+<center><h1>301 Moved Permanently</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>
+
+[2026-03-05 22:25:59] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-05 22:26:01] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_question_count&api_key=HIDDEN
+[2026-03-05 22:26:27] [INFO] Testing connection to central server
+[2026-03-05 22:26:27] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=auth&api_key=HIDDEN
+[2026-03-05 22:26:29] [INFO] Connection successful: Chrisdeb Academy
+[2026-03-05 22:26:37] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-05 22:26:40] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_question_count&api_key=HIDDEN
+[2026-03-05 22:31:49] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-05 22:31:52] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_question_count&api_key=HIDDEN
+[2026-03-05 22:31:59] [INFO] Fetching subjects from central
+[2026-03-05 22:31:59] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-05 22:33:15] [INFO] Fetching subjects from central
+[2026-03-05 22:33:15] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-05 22:33:18] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=19&api_key=HIDDEN
+[2026-03-05 22:33:53] [INFO] Fetching subjects from central
+[2026-03-05 22:33:53] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-05 22:33:55] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=24&api_key=HIDDEN
+[2026-03-05 22:35:08] [INFO] Fetching subjects from central
+[2026-03-05 22:35:08] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-05 22:35:11] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=24&api_key=HIDDEN
+[2026-03-05 22:35:14] [INFO] Pulling questions with params: {"subject_id":24,"topic_id":0,"class":"","difficulty":"","limit":50,"type":"objective"}
+[2026-03-05 22:35:14] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=24&topic_id=0&class=&difficulty=&limit=50&type=objective&api_key=HIDDEN
+[2026-03-05 22:35:18] [INFO] Saving questions locally
+[2026-03-05 22:46:49] [INFO] Fetching subjects from central
+[2026-03-05 22:46:49] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects
+[2026-03-05 22:46:52] [ERROR] HTTP Error: 301 - <html>
+<head><title>301 Moved Permanently</title></head>
+<body>
+<center><h1>301 Moved Permanently</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>
+
+[2026-03-05 22:46:52] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=24
+[2026-03-05 22:46:56] [ERROR] HTTP Error: 301 - <html>
+<head><title>301 Moved Permanently</title></head>
+<body>
+<center><h1>301 Moved Permanently</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>
+
+[2026-03-05 22:46:59] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status
+[2026-03-05 22:47:02] [ERROR] HTTP Error: 301 - <html>
+<head><title>301 Moved Permanently</title></head>
+<body>
+<center><h1>301 Moved Permanently</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>
+
+[2026-03-05 22:49:47] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-05 22:49:48] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_question_count&api_key=HIDDEN
+[2026-03-05 22:51:47] [INFO] Fetching subjects from central
+[2026-03-05 22:51:47] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-05 22:51:59] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-05 22:52:00] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_question_count&api_key=HIDDEN
+[2026-03-05 22:52:03] [INFO] Fetching subjects from central
+[2026-03-05 22:52:03] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-05 22:52:10] [INFO] Fetching subjects from central
+[2026-03-05 22:52:10] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-05 22:52:12] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=19&api_key=HIDDEN
+[2026-03-05 22:52:22] [INFO] Fetching subjects from central
+[2026-03-05 22:52:22] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-05 22:52:24] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=19&api_key=HIDDEN
+[2026-03-05 22:52:25] [INFO] Previewing questions with params: {"subject_id":19,"topic_id":0,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-05 22:52:25] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=19&topic_id=0&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-05 22:53:05] [INFO] Fetching subjects from central
+[2026-03-05 22:53:05] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-05 22:53:07] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=1&api_key=HIDDEN
+[2026-03-06 09:44:07] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-06 09:44:07] [ERROR] CURL Error: Could not resolve host: impactdigitalacademy.com.ng
+[2026-03-06 09:44:16] [INFO] Testing connection to central server
+[2026-03-06 09:44:16] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=auth&api_key=HIDDEN
+[2026-03-06 09:44:16] [ERROR] CURL Error: Could not resolve host: impactdigitalacademy.com.ng
+[2026-03-06 09:44:16] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-06 09:44:16] [ERROR] CURL Error: Could not resolve host: impactdigitalacademy.com.ng
+[2026-03-06 09:45:14] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-06 09:45:17] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_question_count&api_key=HIDDEN
+[2026-03-06 09:45:27] [INFO] Fetching subjects from central
+[2026-03-06 09:45:27] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:02:53] [INFO] Fetching subjects from central
+[2026-03-06 10:02:53] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:03:01] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:06:29] [INFO] Fetching subjects from central
+[2026-03-06 10:06:29] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:06:31] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:06:32] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":70,"type":"objective"}
+[2026-03-06 10:06:32] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&class=&difficulty=&limit=70&type=objective&api_key=HIDDEN
+[2026-03-06 10:06:45] [INFO] Fetching subjects from central
+[2026-03-06 10:06:45] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:06:47] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=27&api_key=HIDDEN
+[2026-03-06 10:06:52] [INFO] Fetching subjects from central
+[2026-03-06 10:06:52] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:06:53] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:07:12] [INFO] Fetching subjects from central
+[2026-03-06 10:07:12] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:07:14] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:07:15] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 10:07:15] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 10:20:43] [INFO] Fetching subjects from central
+[2026-03-06 10:20:43] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects
+[2026-03-06 10:20:44] [ERROR] HTTP Error: 301 - <html>
+<head><title>301 Moved Permanently</title></head>
+<body>
+<center><h1>301 Moved Permanently</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>
+
+[2026-03-06 10:21:01] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status
+[2026-03-06 10:21:02] [ERROR] HTTP Error: 301 - <html>
+<head><title>301 Moved Permanently</title></head>
+<body>
+<center><h1>301 Moved Permanently</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>
+
+[2026-03-06 10:21:14] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-06 10:21:16] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_question_count&api_key=HIDDEN
+[2026-03-06 10:21:20] [INFO] Fetching subjects from central
+[2026-03-06 10:21:20] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:29:26] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-06 10:29:28] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_question_count&api_key=HIDDEN
+[2026-03-06 10:29:34] [INFO] Testing connection to central server
+[2026-03-06 10:29:34] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=auth&api_key=HIDDEN
+[2026-03-06 10:29:36] [INFO] Connection successful: Chrisdeb Academy
+[2026-03-06 10:29:36] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-06 10:29:50] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_question_count&api_key=HIDDEN
+[2026-03-06 10:29:55] [INFO] Fetching subjects from central
+[2026-03-06 10:29:55] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:30:03] [INFO] Fetching subjects from central
+[2026-03-06 10:30:03] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:30:07] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:30:16] [INFO] Fetching subjects from central
+[2026-03-06 10:30:16] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:30:17] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:30:19] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 10:30:19] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 10:34:08] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status
+[2026-03-06 10:34:08] [INFO] Using API Key: 5387bba2...
+[2026-03-06 10:34:12] [INFO] HTTP Response Code: 401
+[2026-03-06 10:34:12] [INFO] Raw Response: {"error":"API key required"}...
+[2026-03-06 10:34:12] [ERROR] HTTP Error: 401 - {"error":"API key required"}
+[2026-03-06 10:34:26] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-06 10:34:33] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_question_count&api_key=HIDDEN
+[2026-03-06 10:37:16] [INFO] Fetching subjects from central
+[2026-03-06 10:37:16] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:37:22] [INFO] Fetching subjects from central
+[2026-03-06 10:37:22] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:37:24] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:37:46] [INFO] Fetching subjects from central
+[2026-03-06 10:37:46] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:37:53] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:37:55] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 10:37:55] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 10:48:00] [INFO] Fetching subjects from central
+[2026-03-06 10:48:00] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:48:08] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:48:10] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 10:48:10] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 10:48:37] [INFO] Fetching subjects from central
+[2026-03-06 10:48:37] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:48:49] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:48:54] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 10:48:54] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 10:49:15] [INFO] Fetching subjects from central
+[2026-03-06 10:49:15] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:49:16] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:49:19] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 10:49:19] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 10:51:00] [INFO] Fetching subjects from central
+[2026-03-06 10:51:00] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:51:02] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:51:04] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 10:51:04] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 10:51:21] [INFO] Fetching subjects from central
+[2026-03-06 10:51:21] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:51:31] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=sync_status&api_key=HIDDEN
+[2026-03-06 10:51:32] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_question_count&api_key=HIDDEN
+[2026-03-06 10:51:36] [INFO] Fetching subjects from central
+[2026-03-06 10:51:36] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:51:44] [INFO] Fetching subjects from central
+[2026-03-06 10:51:44] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:51:45] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:52:42] [INFO] Fetching subjects from central
+[2026-03-06 10:52:42] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:52:44] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 10:52:45] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 10:52:45] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 10:56:04] [INFO] Testing connection to central server
+[2026-03-06 10:56:04] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=auth&api_key=HIDDEN
+[2026-03-06 10:56:06] [INFO] Connection successful: Chrisdeb Academy
+[2026-03-06 10:56:06] [INFO] Fetching subjects from central
+[2026-03-06 10:56:06] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:56:07] [INFO] Previewing questions with params: {"subject_id":19,"limit":5,"type":"objective"}
+[2026-03-06 10:56:07] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=19&limit=5&type=objective&api_key=HIDDEN
+[2026-03-06 10:56:09] [INFO] Previewing questions with params: {"subject_id":1,"limit":5,"type":"objective"}
+[2026-03-06 10:56:09] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=1&limit=5&type=objective&api_key=HIDDEN
+[2026-03-06 10:58:35] [INFO] Testing connection to central server
+[2026-03-06 10:58:35] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=auth&api_key=HIDDEN
+[2026-03-06 10:58:37] [INFO] Connection successful: Chrisdeb Academy
+[2026-03-06 10:58:37] [INFO] Fetching subjects from central
+[2026-03-06 10:58:37] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:58:40] [INFO] Previewing questions with params: {"subject_id":19,"limit":5,"type":"objective"}
+[2026-03-06 10:58:40] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=19&limit=5&type=objective&api_key=HIDDEN
+[2026-03-06 10:58:41] [INFO] Previewing questions with params: {"subject_id":2,"limit":5,"type":"objective"}
+[2026-03-06 10:58:41] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&limit=5&type=objective&api_key=HIDDEN
+[2026-03-06 10:59:03] [INFO] Testing connection to central server
+[2026-03-06 10:59:03] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=auth&api_key=HIDDEN
+[2026-03-06 10:59:07] [INFO] Connection successful: Chrisdeb Academy
+[2026-03-06 10:59:07] [INFO] Fetching subjects from central
+[2026-03-06 10:59:07] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 10:59:10] [INFO] Previewing questions with params: {"subject_id":19,"limit":5,"type":"objective"}
+[2026-03-06 10:59:10] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=19&limit=5&type=objective&api_key=HIDDEN
+[2026-03-06 10:59:11] [INFO] Previewing questions with params: {"subject_id":2,"limit":5,"type":"objective"}
+[2026-03-06 10:59:11] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&limit=5&type=objective&api_key=HIDDEN
+[2026-03-06 11:09:25] [INFO] Fetching subjects from central
+[2026-03-06 11:09:25] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 11:09:49] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 11:09:52] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":0,"class":"","difficulty":"","limit":10,"type":"objective"}
+[2026-03-06 11:09:52] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=0&class=&difficulty=&limit=10&type=objective&api_key=HIDDEN
+[2026-03-06 11:10:41] [INFO] Fetching subjects from central
+[2026-03-06 11:10:41] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 11:10:44] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 11:10:46] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":0,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 11:10:46] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=0&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 11:16:25] [INFO] Fetching subjects from central
+[2026-03-06 11:16:25] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 11:16:27] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 11:16:29] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":0,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 11:16:29] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=0&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 11:16:35] [INFO] Fetching subjects from central
+[2026-03-06 11:16:35] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 11:16:36] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 11:16:39] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":0,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 11:16:39] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=0&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 11:17:37] [INFO] Fetching subjects from central
+[2026-03-06 11:17:37] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 11:17:40] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 11:17:41] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 11:17:41] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&class=&difficulty=&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 11:23:36] [INFO] Fetching subjects from central
+[2026-03-06 11:23:36] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 11:23:38] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 11:23:40] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 11:23:40] [INFO] Calling endpoint: ?action=get_questions&subject_id=2&topic_id=1195&limit=20&type=objective
+[2026-03-06 11:23:40] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 11:23:47] [INFO] Raw API response: Array
+(
+    [status] => success
+    [batch_id] => batch_69aaaa7d7bc3a
+    [download_date] => 2026-03-06 11:20:45
+    [objective] => Array
+        (
+            [count] => 0
+            [questions] => Array
+                (
+                )
+
+        )
+
+)
+
+[2026-03-06 11:28:30] [INFO] Previewing questions with params: {"subject_id":2,"limit":5,"type":"objective"}
+[2026-03-06 11:28:30] [INFO] Calling endpoint: ?action=get_questions&subject_id=2&limit=5&type=objective
+[2026-03-06 11:28:30] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&limit=5&type=objective&api_key=HIDDEN
+[2026-03-06 11:28:36] [INFO] Raw API response: Array
+(
+    [status] => success
+    [batch_id] => batch_69aaab9f4bd61
+    [download_date] => 2026-03-06 11:25:35
+    [objective] => Array
+        (
+            [count] => 0
+            [questions] => Array
+                (
+                )
+
+        )
+
+)
+
+[2026-03-06 11:31:13] [INFO] Previewing questions with params: {"subject_id":2,"limit":5,"type":"objective"}
+[2026-03-06 11:31:13] [INFO] Calling endpoint: ?action=get_questions&subject_id=2&limit=5&type=objective
+[2026-03-06 11:31:13] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&limit=5&type=objective&api_key=HIDDEN
+[2026-03-06 11:31:14] [INFO] Raw API response: Array
+(
+    [status] => success
+    [batch_id] => batch_69aaac3d5f6fe
+    [download_date] => 2026-03-06 11:28:13
+    [objective] => Array
+        (
+            [count] => 1
+            [questions] => Array
+                (
+                    [0] => Array
+                        (
+                            [id] => 300
+                            [question_text] => What is a multiple of a number?
+                            [option_a] => The result of dividing the number by another number
+                            [option_b] => The product of the number and any whole number
+                            [option_c] => The number itself
+                            [option_d] => The factors of the number
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1196
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => A multiple is the product of a number and any whole number. For example, multiples of 3 are 3, 6, 9, 12...
+                        )
+
+                )
+
+        )
+
+)
+
+[2026-03-06 11:32:46] [INFO] Fetching subjects from central
+[2026-03-06 11:32:46] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 11:32:49] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 11:32:57] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 11:32:57] [INFO] Calling endpoint: ?action=get_questions&subject_id=2&topic_id=1195&limit=20&type=objective
+[2026-03-06 11:32:57] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 11:32:59] [INFO] Raw API response: Array
+(
+    [status] => success
+    [batch_id] => batch_69aaaca59b1a8
+    [download_date] => 2026-03-06 11:29:57
+    [objective] => Array
+        (
+            [count] => 20
+            [questions] => Array
+                (
+                    [0] => Array
+                        (
+                            [id] => 67
+                            [question_text] => Which of these is an example of the commutative property of addition?
+                            [option_a] => 5 + 3 = 8
+                            [option_b] => 5 + 3 = 3 + 5
+                            [option_c] => (5 + 3) + 2 = 5 + (3 + 2)
+                            [option_d] => 5 + 0 = 5
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 5 + 3 = 3 + 5 shows the commutative property.
+                        )
+
+                    [1] => Array
+                        (
+                            [id] => 51
+                            [question_text] => Which of the following shows the closure property of addition?
+                            [option_a] => 5 + 3 = 8
+                            [option_b] => 5 + 3 = 3 + 5
+                            [option_c] => (5 + 3) + 2 = 5 + (3 + 2)
+                            [option_d] => 5 + 0 = 5
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Closure property means adding two whole numbers gives a whole number. 5 + 3 = 8 shows this.
+                        )
+
+                    [2] => Array
+                        (
+                            [id] => 72
+                            [question_text] => Which property is shown by a × 1 = a?
+                            [option_a] => Closure property
+                            [option_b] => Commutative property
+                            [option_c] => Associative property
+                            [option_d] => Identity property
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => The identity property of multiplication states that multiplying by 1 does not change the number.
+                        )
+
+                    [3] => Array
+                        (
+                            [id] => 20
+                            [question_text] => What is the expanded form of 9,876?
+                            [option_a] => 9000 + 800 + 70 + 6
+                            [option_b] => 9000 + 800 + 700 + 6
+                            [option_c] => 9000 + 8000 + 70 + 6
+                            [option_d] => 9000 + 800 + 70 + 60
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 9,876 = 9,000 + 800 + 70 + 6.
+                        )
+
+                    [4] => Array
+                        (
+                            [id] => 93
+                            [question_text] => What is the successor of 1,000?
+                            [option_a] => 999
+                            [option_b] => 1000
+                            [option_c] => 1001
+                            [option_d] => 2000
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 1,000 + 1 = 1,001.
+                        )
+
+                    [5] => Array
+                        (
+                            [id] => 62
+                            [question_text] => Which property is shown by 3 × 4 = 4 × 3?
+                            [option_a] => Closure property
+                            [option_b] => Commutative property
+                            [option_c] => Associative property
+                            [option_d] => Identity property
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => The commutative property states that a × b = b × a.
+                        )
+
+                    [6] => Array
+                        (
+                            [id] => 48
+                            [question_text] => Which number is between 3,500 and 3,600?
+                            [option_a] => 3450
+                            [option_b] => 3550
+                            [option_c] => 3650
+                            [option_d] => 3500
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 3,550 is between 3,500 and 3,600.
+                        )
+
+                    [7] => Array
+                        (
+                            [id] => 29
+                            [question_text] => Arrange in descending order: 567, 89, 234, 1,234, 456
+                            [option_a] => 1234, 567, 456, 234, 89
+                            [option_b] => 89, 234, 456, 567, 1234
+                            [option_c] => 1234, 567, 234, 456, 89
+                            [option_d] => 567, 456, 234, 1234, 89
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Descending order: 1,234 (largest), then 567, 456, 234, and 89 (smallest).
+                        )
+
+                    [8] => Array
+                        (
+                            [id] => 13
+                            [question_text] => In 56,789, what is the value of 7?
+                            [option_a] => 7
+                            [option_b] => 70
+                            [option_c] => 700
+                            [option_d] => 7,000
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 7 is in the hundreds place, so its value is 700.
+                        )
+
+                    [9] => Array
+                        (
+                            [id] => 19
+                            [question_text] => Write 12,345 in expanded form.
+                            [option_a] => 10000 + 2000 + 300 + 40 + 5
+                            [option_b] => 1000 + 200 + 300 + 40 + 5
+                            [option_c] => 10000 + 2000 + 3000 + 40 + 5
+                            [option_d] => 10000 + 2000 + 300 + 400 + 5
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 12,345 = 10,000 + 2,000 + 300 + 40 + 5.
+                        )
+
+                    [10] => Array
+                        (
+                            [id] => 42
+                            [question_text] => Arrange in ascending order: 100, 99, 101, 98, 102
+                            [option_a] => 98, 99, 100, 101, 102
+                            [option_b] => 102, 101, 100, 99, 98
+                            [option_c] => 98, 100, 99, 101, 102
+                            [option_d] => 99, 98, 100, 101, 102
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Ascending order: 98, 99, 100, 101, 102.
+                        )
+
+                    [11] => Array
+                        (
+                            [id] => 57
+                            [question_text] => Is 7 - 5 a whole number?
+                            [option_a] => Yes, because 7 - 5 = 2
+                            [option_b] => No, because subtraction is not closed
+                            [option_c] => Sometimes
+                            [option_d] => Only when the answer is positive
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 7 - 5 = 2, which is a whole number. However, subtraction is not always closed for whole numbers.
+                        )
+
+                    [12] => Array
+                        (
+                            [id] => 79
+                            [question_text] => Which of these shows the identity property of addition?
+                            [option_a] => 5 + 3 = 8
+                            [option_b] => 5 + 3 = 3 + 5
+                            [option_c] => 5 + 0 = 5
+                            [option_d] => (5 + 3) + 2 = 5 + (3 + 2)
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 5 + 0 = 5 shows the identity property.
+                        )
+
+                    [13] => Array
+                        (
+                            [id] => 86
+                            [question_text] => How many whole numbers are between 5 and 10?
+                            [option_a] => 3
+                            [option_b] => 4
+                            [option_c] => 5
+                            [option_d] => 6
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Whole numbers between 5 and 10 are 6, 7, 8, 9. That is 4 numbers.
+                        )
+
+                    [14] => Array
+                        (
+                            [id] => 61
+                            [question_text] => Which property is shown by 5 + 7 = 7 + 5?
+                            [option_a] => Closure property
+                            [option_b] => Commutative property
+                            [option_c] => Associative property
+                            [option_d] => Identity property
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => The commutative property states that a + b = b + a.
+                        )
+
+                    [15] => Array
+                        (
+                            [id] => 26
+                            [question_text] => Arrange in ascending order: 234, 567, 89, 1,234, 456
+                            [option_a] => 89, 234, 456, 567, 1234
+                            [option_b] => 1234, 567, 456, 234, 89
+                            [option_c] => 234, 456, 567, 89, 1234
+                            [option_d] => 89, 456, 234, 567, 1234
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Ascending means smallest to largest. 89 is smallest (2 digits), then 234, 456, 567 (3 digits), then 1,234 (4 digits).
+                        )
+
+                    [16] => Array
+                        (
+                            [id] => 87
+                            [question_text] => How many whole numbers are between 0 and 5?
+                            [option_a] => 3
+                            [option_b] => 4
+                            [option_c] => 5
+                            [option_d] => 6
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Whole numbers between 0 and 5 are 1, 2, 3, 4. That is 4 numbers.
+                        )
+
+                    [17] => Array
+                        (
+                            [id] => 27
+                            [question_text] => Arrange in descending order: 1,245, 987, 2,301, 156, 1,987
+                            [option_a] => 156, 987, 1245, 1987, 2301
+                            [option_b] => 2301, 1987, 1245, 987, 156
+                            [option_c] => 2301, 1245, 1987, 987, 156
+                            [option_d] => 987, 156, 1245, 1987, 2301
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Descending means largest to smallest. 2,301 is largest, then 1,987, 1,245, 987, and 156 is smallest.
+                        )
+
+                    [18] => Array
+                        (
+                            [id] => 16
+                            [question_text] => What is the expanded form of 8,456?
+                            [option_a] => 8000 + 400 + 50 + 6
+                            [option_b] => 8000 + 400 + 5 + 6
+                            [option_c] => 8000 + 400 + 500 + 6
+                            [option_d] => 8000 + 4000 + 50 + 6
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 8,456 = 8,000 + 400 + 50 + 6.
+                        )
+
+                    [19] => Array
+                        (
+                            [id] => 25
+                            [question_text] => In 98,765, which digit is in the hundreds place?
+                            [option_a] => 9
+                            [option_b] => 8
+                            [option_c] => 7
+                            [option_d] => 6
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => In 98,765, 7 is in the hundreds place.
+                        )
+
+                )
+
+        )
+
+)
+
+[2026-03-06 11:35:03] [INFO] Fetching subjects from central
+[2026-03-06 11:35:03] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 11:35:06] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 11:35:07] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1195,"class":"","difficulty":"","limit":50,"type":"objective"}
+[2026-03-06 11:35:07] [INFO] Calling endpoint: ?action=get_questions&subject_id=2&topic_id=1195&limit=50&type=objective
+[2026-03-06 11:35:07] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1195&limit=50&type=objective&api_key=HIDDEN
+[2026-03-06 11:35:13] [INFO] Raw API response: Array
+(
+    [status] => success
+    [batch_id] => batch_69aaad2b3eb7d
+    [download_date] => 2026-03-06 11:32:11
+    [objective] => Array
+        (
+            [count] => 50
+            [questions] => Array
+                (
+                    [0] => Array
+                        (
+                            [id] => 23
+                            [question_text] => In 23,456, which digit is in the ten-thousands place?
+                            [option_a] => 2
+                            [option_b] => 3
+                            [option_c] => 4
+                            [option_d] => 5
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => In 23,456, 2 is in the ten-thousands place.
+                        )
+
+                    [1] => Array
+                        (
+                            [id] => 56
+                            [question_text] => Which of these demonstrates that whole numbers are closed under multiplication?
+                            [option_a] => 8 × 3 = 24
+                            [option_b] => 8 × 3 = 3 × 8
+                            [option_c] => (8 × 3) × 2 = 8 × (3 × 2)
+                            [option_d] => 8 × 1 = 8
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 8 × 3 = 24 shows that the product of two whole numbers is a whole number.
+                        )
+
+                    [2] => Array
+                        (
+                            [id] => 42
+                            [question_text] => Arrange in ascending order: 100, 99, 101, 98, 102
+                            [option_a] => 98, 99, 100, 101, 102
+                            [option_b] => 102, 101, 100, 99, 98
+                            [option_c] => 98, 100, 99, 101, 102
+                            [option_d] => 99, 98, 100, 101, 102
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Ascending order: 98, 99, 100, 101, 102.
+                        )
+
+                    [3] => Array
+                        (
+                            [id] => 58
+                            [question_text] => Is 5 - 7 a whole number?
+                            [option_a] => Yes, because 5 - 7 = -2
+                            [option_b] => No, because -2 is not a whole number
+                            [option_c] => Sometimes
+                            [option_d] => Only when the answer is positive
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 5 - 7 = -2, which is not a whole number because whole numbers do not include negatives.
+                        )
+
+                    [4] => Array
+                        (
+                            [id] => 37
+                            [question_text] => Which number is the largest? 9999, 10000, 9998, 10001
+                            [option_a] => 9999
+                            [option_b] => 10000
+                            [option_c] => 9998
+                            [option_d] => 10001
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 10,001 has 5 digits and is the largest.
+                        )
+
+                    [5] => Array
+                        (
+                            [id] => 22
+                            [question_text] => In 847,265, which digit is in the thousands place?
+                            [option_a] => 8
+                            [option_b] => 4
+                            [option_c] => 7
+                            [option_d] => 2
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => In 847,265, 7 is in the thousands place.
+                        )
+
+                    [6] => Array
+                        (
+                            [id] => 76
+                            [question_text] => Complete: 23 × 1 = ________
+                            [option_a] => 0
+                            [option_b] => 1
+                            [option_c] => 23
+                            [option_d] => 231
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Multiplying by 1 does not change the number: 23 × 1 = 23.
+                        )
+
+                    [7] => Array
+                        (
+                            [id] => 28
+                            [question_text] => Arrange in ascending order: 2,456, 987, 3,001, 1,998
+                            [option_a] => 987, 1998, 2456, 3001
+                            [option_b] => 3001, 2456, 1998, 987
+                            [option_c] => 987, 2456, 1998, 3001
+                            [option_d] => 1998, 987, 2456, 3001
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Ascending order: 987 (3 digits), 1,998, 2,456, 3,001 (4 digits).
+                        )
+
+                    [8] => Array
+                        (
+                            [id] => 43
+                            [question_text] => Arrange in descending order: 888, 889, 887, 890
+                            [option_a] => 890, 889, 888, 887
+                            [option_b] => 887, 888, 889, 890
+                            [option_c] => 890, 888, 889, 887
+                            [option_d] => 889, 890, 888, 887
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Descending order: 890, 889, 888, 887.
+                        )
+
+                    [9] => Array
+                        (
+                            [id] => 61
+                            [question_text] => Which property is shown by 5 + 7 = 7 + 5?
+                            [option_a] => Closure property
+                            [option_b] => Commutative property
+                            [option_c] => Associative property
+                            [option_d] => Identity property
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => The commutative property states that a + b = b + a.
+                        )
+
+                    [10] => Array
+                        (
+                            [id] => 94
+                            [question_text] => What is the predecessor of 1,000?
+                            [option_a] => 998
+                            [option_b] => 999
+                            [option_c] => 1000
+                            [option_d] => 1001
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 1,000 - 1 = 999.
+                        )
+
+                    [11] => Array
+                        (
+                            [id] => 49
+                            [question_text] => Arrange in ascending order: 999, 1000, 1001, 998
+                            [option_a] => 998, 999, 1000, 1001
+                            [option_b] => 1001, 1000, 999, 998
+                            [option_c] => 998, 1000, 999, 1001
+                            [option_d] => 999, 998, 1000, 1001
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Ascending order: 998, 999, 1,000, 1,001.
+                        )
+
+                    [12] => Array
+                        (
+                            [id] => 36
+                            [question_text] => Arrange in descending order: 505, 550, 500, 555
+                            [option_a] => 555, 550, 505, 500
+                            [option_b] => 500, 505, 550, 555
+                            [option_c] => 555, 505, 550, 500
+                            [option_d] => 550, 555, 505, 500
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Descending order: 555, 550, 505, 500.
+                        )
+
+                    [13] => Array
+                        (
+                            [id] => 8
+                            [question_text] => In the number 5,678, what is the place value of 5?
+                            [option_a] => 5
+                            [option_b] => 50
+                            [option_c] => 500
+                            [option_d] => 5,000
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 5 is in the thousands place, so its value is 5,000.
+                        )
+
+                    [14] => Array
+                        (
+                            [id] => 64
+                            [question_text] => Complete: 6 × 7 = 7 × ________
+                            [option_a] => 6
+                            [option_b] => 7
+                            [option_c] => 42
+                            [option_d] => 13
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => By commutative property, 6 × 7 = 7 × 6.
+                        )
+
+                    [15] => Array
+                        (
+                            [id] => 9
+                            [question_text] => What is the value of 9 in 9,876?
+                            [option_a] => 9
+                            [option_b] => 90
+                            [option_c] => 900
+                            [option_d] => 9,000
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 9 is in the thousands place, so its value is 9,000.
+                        )
+
+                    [16] => Array
+                        (
+                            [id] => 27
+                            [question_text] => Arrange in descending order: 1,245, 987, 2,301, 156, 1,987
+                            [option_a] => 156, 987, 1245, 1987, 2301
+                            [option_b] => 2301, 1987, 1245, 987, 156
+                            [option_c] => 2301, 1245, 1987, 987, 156
+                            [option_d] => 987, 156, 1245, 1987, 2301
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Descending means largest to smallest. 2,301 is largest, then 1,987, 1,245, 987, and 156 is smallest.
+                        )
+
+                    [17] => Array
+                        (
+                            [id] => 97
+                            [question_text] => How many whole numbers are there between 10 and 20?
+                            [option_a] => 8
+                            [option_b] => 9
+                            [option_c] => 10
+                            [option_d] => 11
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Whole numbers between 10 and 20 are 11, 12, 13, 14, 15, 16, 17, 18, 19. That is 9 numbers.
+                        )
+
+                    [18] => Array
+                        (
+                            [id] => 51
+                            [question_text] => Which of the following shows the closure property of addition?
+                            [option_a] => 5 + 3 = 8
+                            [option_b] => 5 + 3 = 3 + 5
+                            [option_c] => (5 + 3) + 2 = 5 + (3 + 2)
+                            [option_d] => 5 + 0 = 5
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Closure property means adding two whole numbers gives a whole number. 5 + 3 = 8 shows this.
+                        )
+
+                    [19] => Array
+                        (
+                            [id] => 70
+                            [question_text] => What is the missing number? 5 × 8 = 8 × ________
+                            [option_a] => 5
+                            [option_b] => 8
+                            [option_c] => 40
+                            [option_d] => 13
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => By commutative property, 5 × 8 = 8 × 5.
+                        )
+
+                    [20] => Array
+                        (
+                            [id] => 57
+                            [question_text] => Is 7 - 5 a whole number?
+                            [option_a] => Yes, because 7 - 5 = 2
+                            [option_b] => No, because subtraction is not closed
+                            [option_c] => Sometimes
+                            [option_d] => Only when the answer is positive
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 7 - 5 = 2, which is a whole number. However, subtraction is not always closed for whole numbers.
+                        )
+
+                    [21] => Array
+                        (
+                            [id] => 81
+                            [question_text] => What are whole numbers?
+                            [option_a] => Numbers that include fractions
+                            [option_b] => Counting numbers starting from zero
+                            [option_c] => Numbers that include decimals
+                            [option_d] => Negative numbers
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Whole numbers are counting numbers starting from zero: 0, 1, 2, 3, ...
+                        )
+
+                    [22] => Array
+                        (
+                            [id] => 92
+                            [question_text] => The predecessor of 100 is ________
+                            [option_a] => 98
+                            [option_b] => 99
+                            [option_c] => 100
+                            [option_d] => 101
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Predecessor means the previous whole number. 100 - 1 = 99.
+                        )
+
+                    [23] => Array
+                        (
+                            [id] => 40
+                            [question_text] => Arrange in descending order: 3265, 3270, 3260, 3275
+                            [option_a] => 3275, 3270, 3265, 3260
+                            [option_b] => 3260, 3265, 3270, 3275
+                            [option_c] => 3275, 3270, 3260, 3265
+                            [option_d] => 3270, 3275, 3265, 3260
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Descending order: 3,275, 3,270, 3,265, 3,260.
+                        )
+
+                    [24] => Array
+                        (
+                            [id] => 10
+                            [question_text] => What is the place value of 1 in 12,345?
+                            [option_a] => 1
+                            [option_b] => 10
+                            [option_c] => 100
+                            [option_d] => 10,000
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 1 is in the ten-thousands place, so its value is 10,000.
+                        )
+
+                    [25] => Array
+                        (
+                            [id] => 82
+                            [question_text] => Which of the following is NOT a whole number?
+                            [option_a] => 0
+                            [option_b] => 5
+                            [option_c] => 10
+                            [option_d] => -3
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Whole numbers do not include negative numbers. -3 is not a whole number.
+                        )
+
+                    [26] => Array
+                        (
+                            [id] => 45
+                            [question_text] => Which of these numbers is the largest? 5678, 5687, 5768, 5786
+                            [option_a] => 5678
+                            [option_b] => 5687
+                            [option_c] => 5768
+                            [option_d] => 5786
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 5,786 is the largest.
+                        )
+
+                    [27] => Array
+                        (
+                            [id] => 44
+                            [question_text] => Which of these numbers is the smallest? 1023, 1032, 1012, 1022
+                            [option_a] => 1023
+                            [option_b] => 1032
+                            [option_c] => 1012
+                            [option_d] => 1022
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 1,012 is the smallest.
+                        )
+
+                    [28] => Array
+                        (
+                            [id] => 5
+                            [question_text] => What is the value of 2 in the number 847,265?
+                            [option_a] => 2
+                            [option_b] => 20
+                            [option_c] => 200
+                            [option_d] => 2,000
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 2 is in the hundreds place, so its value is 200.
+                        )
+
+                    [29] => Array
+                        (
+                            [id] => 30
+                            [question_text] => Which number is the smallest? 234, 567, 89, 1,234, 456
+                            [option_a] => 234
+                            [option_b] => 567
+                            [option_c] => 89
+                            [option_d] => 1234
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 89 has only 2 digits, while others have 3 or 4 digits, so it is the smallest.
+                        )
+
+                    [30] => Array
+                        (
+                            [id] => 84
+                            [question_text] => What is the smallest whole number?
+                            [option_a] => -1
+                            [option_b] => 0
+                            [option_c] => 1
+                            [option_d] => 2
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Whole numbers start from 0, so 0 is the smallest whole number.
+                        )
+
+                    [31] => Array
+                        (
+                            [id] => 19
+                            [question_text] => Write 12,345 in expanded form.
+                            [option_a] => 10000 + 2000 + 300 + 40 + 5
+                            [option_b] => 1000 + 200 + 300 + 40 + 5
+                            [option_c] => 10000 + 2000 + 3000 + 40 + 5
+                            [option_d] => 10000 + 2000 + 300 + 400 + 5
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 12,345 = 10,000 + 2,000 + 300 + 40 + 5.
+                        )
+
+                    [32] => Array
+                        (
+                            [id] => 95
+                            [question_text] => Which of these is a set of whole numbers?
+                            [option_a] => {-1, 0, 1, 2}
+                            [option_b] => {0, 1, 2, 3, 4}
+                            [option_c] => {1/2, 1, 3/2, 2}
+                            [option_d] => {0.5, 1.5, 2.5}
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Whole numbers are 0, 1, 2, 3, 4, ...
+                        )
+
+                    [33] => Array
+                        (
+                            [id] => 53
+                            [question_text] => When you add two whole numbers, the result is always a ________.
+                            [option_a] => fraction
+                            [option_b] => whole number
+                            [option_c] => decimal
+                            [option_d] => negative number
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => By the closure property, adding two whole numbers always gives a whole number.
+                        )
+
+                    [34] => Array
+                        (
+                            [id] => 41
+                            [question_text] => Which number is greater than 2,500 but less than 2,600?
+                            [option_a] => 2499
+                            [option_b] => 2500
+                            [option_c] => 2550
+                            [option_d] => 2600
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 2,550 is between 2,500 and 2,600.
+                        )
+
+                    [35] => Array
+                        (
+                            [id] => 93
+                            [question_text] => What is the successor of 1,000?
+                            [option_a] => 999
+                            [option_b] => 1000
+                            [option_c] => 1001
+                            [option_d] => 2000
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 1,000 + 1 = 1,001.
+                        )
+
+                    [36] => Array
+                        (
+                            [id] => 72
+                            [question_text] => Which property is shown by a × 1 = a?
+                            [option_a] => Closure property
+                            [option_b] => Commutative property
+                            [option_c] => Associative property
+                            [option_d] => Identity property
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => The identity property of multiplication states that multiplying by 1 does not change the number.
+                        )
+
+                    [37] => Array
+                        (
+                            [id] => 52
+                            [question_text] => Which of the following shows the closure property of multiplication?
+                            [option_a] => 4 × 6 = 24
+                            [option_b] => 4 × 6 = 6 × 4
+                            [option_c] => (4 × 6) × 2 = 4 × (6 × 2)
+                            [option_d] => 4 × 1 = 4
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Closure property means multiplying two whole numbers gives a whole number. 4 × 6 = 24 shows this.
+                        )
+
+                    [38] => Array
+                        (
+                            [id] => 15
+                            [question_text] => In 98,765, what is the value of 9?
+                            [option_a] => 9
+                            [option_b] => 90
+                            [option_c] => 900
+                            [option_d] => 90,000
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 9 is in the ten-thousands place, so its value is 90,000.
+                        )
+
+                    [39] => Array
+                        (
+                            [id] => 71
+                            [question_text] => Which property is shown by a + 0 = a?
+                            [option_a] => Closure property
+                            [option_b] => Commutative property
+                            [option_c] => Associative property
+                            [option_d] => Identity property
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => The identity property of addition states that adding zero does not change the number.
+                        )
+
+                    [40] => Array
+                        (
+                            [id] => 65
+                            [question_text] => Does addition of whole numbers satisfy the commutative property?
+                            [option_a] => Yes
+                            [option_b] => No
+                            [option_c] => Sometimes
+                            [option_d] => Only with even numbers
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Addition is commutative: a + b = b + a for all whole numbers.
+                        )
+
+                    [41] => Array
+                        (
+                            [id] => 96
+                            [question_text] => Which of these is NOT a whole number?
+                            [option_a] => 0
+                            [option_b] => 100
+                            [option_c] => 1000
+                            [option_d] => 100.5
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 100.5 is a decimal, not a whole number.
+                        )
+
+                    [42] => Array
+                        (
+                            [id] => 89
+                            [question_text] => Which of the following is a whole number?
+                            [option_a] => 2.5
+                            [option_b] => 3/4
+                            [option_c] => 100
+                            [option_d] => -5
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 100 is a whole number.
+                        )
+
+                    [43] => Array
+                        (
+                            [id] => 3
+                            [question_text] => What is the place value of 4 in the number 8,456?
+                            [option_a] => 4
+                            [option_b] => 40
+                            [option_c] => 400
+                            [option_d] => 4,000
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 4 is in the hundreds place, so its value is 400.
+                        )
+
+                    [44] => Array
+                        (
+                            [id] => 98
+                            [question_text] => How many whole numbers are there from 1 to 10 inclusive?
+                            [option_a] => 9
+                            [option_b] => 10
+                            [option_c] => 11
+                            [option_d] => 12
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => From 1 to 10 inclusive means 1, 2, 3, 4, 5, 6, 7, 8, 9, 10. That is 10 numbers.
+                        )
+
+                    [45] => Array
+                        (
+                            [id] => 32
+                            [question_text] => Arrange in ascending order: 789, 45, 1234, 678, 9
+                            [option_a] => 9, 45, 678, 789, 1234
+                            [option_b] => 1234, 789, 678, 45, 9
+                            [option_c] => 9, 45, 789, 678, 1234
+                            [option_d] => 45, 9, 678, 789, 1234
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Ascending order by number of digits: 9, 45, 678, 789, 1234.
+                        )
+
+                    [46] => Array
+                        (
+                            [id] => 50
+                            [question_text] => Arrange in descending order: 8765, 8756, 8675, 8657
+                            [option_a] => 8765, 8756, 8675, 8657
+                            [option_b] => 8657, 8675, 8756, 8765
+                            [option_c] => 8765, 8675, 8756, 8657
+                            [option_d] => 8756, 8765, 8675, 8657
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Descending order: 8,765, 8,756, 8,675, 8,657.
+                        )
+
+                    [47] => Array
+                        (
+                            [id] => 13
+                            [question_text] => In 56,789, what is the value of 7?
+                            [option_a] => 7
+                            [option_b] => 70
+                            [option_c] => 700
+                            [option_d] => 7,000
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 7 is in the hundreds place, so its value is 700.
+                        )
+
+                    [48] => Array
+                        (
+                            [id] => 59
+                            [question_text] => Which operation is NOT always closed for whole numbers?
+                            [option_a] => Addition
+                            [option_b] => Multiplication
+                            [option_c] => Subtraction
+                            [option_d] => All are always closed
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Subtraction is not always closed because subtracting a larger number from a smaller one gives a negative number, which is not a whole number.
+                        )
+
+                    [49] => Array
+                        (
+                            [id] => 4
+                            [question_text] => In the number 64,829, what is the place value of 6?
+                            [option_a] => 6
+                            [option_b] => 60
+                            [option_c] => 600
+                            [option_d] => 60,000
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1195
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 6 is in the ten-thousands place, so its value is 60,000.
+                        )
+
+                )
+
+        )
+
+)
+
+[2026-03-06 12:03:50] [INFO] Fetching subjects from central
+[2026-03-06 12:03:50] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 12:03:52] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 12:03:55] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1197,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 12:03:55] [INFO] Calling endpoint: ?action=get_questions&subject_id=2&topic_id=1197&limit=20&type=objective
+[2026-03-06 12:03:55] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1197&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 12:03:57] [INFO] Raw API response: Array
+(
+    [status] => success
+    [batch_id] => batch_69aab3e80509f
+    [download_date] => 2026-03-06 12:00:56
+    [objective] => Array
+        (
+            [count] => 0
+            [questions] => Array
+                (
+                )
+
+        )
+
+)
+
+[2026-03-06 12:04:08] [INFO] Fetching subjects from central
+[2026-03-06 12:04:08] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 12:04:10] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 12:04:12] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1197,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 12:04:12] [INFO] Calling endpoint: ?action=get_questions&subject_id=2&topic_id=1197&limit=20&type=objective
+[2026-03-06 12:04:12] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1197&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 12:04:13] [INFO] Raw API response: Array
+(
+    [status] => success
+    [batch_id] => batch_69aab3f86517b
+    [download_date] => 2026-03-06 12:01:12
+    [objective] => Array
+        (
+            [count] => 0
+            [questions] => Array
+                (
+                )
+
+        )
+
+)
+
+[2026-03-06 12:07:28] [INFO] Fetching subjects from central
+[2026-03-06 12:07:28] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 12:07:30] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 12:07:31] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1197,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 12:07:31] [INFO] Calling endpoint: ?action=get_questions&subject_id=2&topic_id=1197&limit=20&type=objective
+[2026-03-06 12:07:31] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1197&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 12:07:33] [INFO] Raw API response: Array
+(
+    [status] => success
+    [batch_id] => batch_69aab4bff0767
+    [download_date] => 2026-03-06 12:04:31
+    [objective] => Array
+        (
+            [count] => 20
+            [questions] => Array
+                (
+                    [0] => Array
+                        (
+                            [id] => 532
+                            [question_text] => What is the HCF of 8 and 20?
+                            [option_a] => 2
+                            [option_b] => 4
+                            [option_c] => 5
+                            [option_d] => 8
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 8: 1,2,4,8. Factors of 20: 1,2,4,5,10,20. Common factors: 1,2,4. HCF = 4.
+                        )
+
+                    [1] => Array
+                        (
+                            [id] => 516
+                            [question_text] => What is the HCF of 16 and 24?
+                            [option_a] => 4
+                            [option_b] => 6
+                            [option_c] => 8
+                            [option_d] => 12
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 16: 1,2,4,8,16. Factors of 24: 1,2,3,4,6,8,12,24. Common factors: 1,2,4,8. HCF = 8.
+                        )
+
+                    [2] => Array
+                        (
+                            [id] => 526
+                            [question_text] => What is the HCF of 9, 12, and 15?
+                            [option_a] => 3
+                            [option_b] => 6
+                            [option_c] => 9
+                            [option_d] => 12
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 9: 1,3,9. Factors of 12: 1,2,3,4,6,12. Factors of 15: 1,3,5,15. Common factors: 1,3. HCF = 3.
+                        )
+
+                    [3] => Array
+                        (
+                            [id] => 505
+                            [question_text] => What are the factors of 9?
+                            [option_a] => 1, 3, 9
+                            [option_b] => 1, 2, 3, 9
+                            [option_c] => 3, 6, 9
+                            [option_d] => 1, 9 only
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 9 ÷ 1 = 9, 9 ÷ 3 = 3, 9 ÷ 9 = 1. So factors are 1, 3, 9.
+                        )
+
+                    [4] => Array
+                        (
+                            [id] => 559
+                            [question_text] => Find the HCF of 30, 42, and 54 using prime factorization.
+                            [option_a] => 3
+                            [option_b] => 6
+                            [option_c] => 9
+                            [option_d] => 12
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => hard
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 30 = 2 × 3 × 5, 42 = 2 × 3 × 7, 54 = 2 × 3³. Common factors: 2 × 3 = 6.
+                        )
+
+                    [5] => Array
+                        (
+                            [id] => 585
+                            [question_text] => A florist has 60 roses and 84 lilies. She wants to make bouquets with the same number of roses and the same number of lilies in each bouquet. What is the largest number of bouquets she can make?
+                            [option_a] => 6
+                            [option_b] => 12
+                            [option_c] => 18
+                            [option_d] => 24
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => hard
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => HCF of 60 and 84 is 12, so she can make 12 bouquets.
+                        )
+
+                    [6] => Array
+                        (
+                            [id] => 502
+                            [question_text] => Find all the factors of 18.
+                            [option_a] => 1, 2, 3, 6, 9, 18
+                            [option_b] => 1, 2, 3, 4, 6, 9, 18
+                            [option_c] => 2, 3, 6, 9, 18
+                            [option_d] => 1, 3, 6, 9, 18
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 18: 1, 2, 3, 6, 9, 18.
+                        )
+
+                    [7] => Array
+                        (
+                            [id] => 507
+                            [question_text] => Which of these numbers is a factor of 24?
+                            [option_a] => 5
+                            [option_b] => 7
+                            [option_c] => 8
+                            [option_d] => 9
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 8 divides 24 exactly: 24 ÷ 8 = 3, so 8 is a factor.
+                        )
+
+                    [8] => Array
+                        (
+                            [id] => 531
+                            [question_text] => Find the HCF of 18, 24, and 30.
+                            [option_a] => 3
+                            [option_b] => 6
+                            [option_c] => 9
+                            [option_d] => 12
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 18: 1,2,3,6,9,18. Factors of 24: 1,2,3,4,6,8,12,24. Factors of 30: 1,2,3,5,6,10,15,30. Common factors: 1,2,3,6. HCF = 6.
+                        )
+
+                    [9] => Array
+                        (
+                            [id] => 499
+                            [question_text] => Which of the following are factors of 12?
+                            [option_a] => 1, 2, 3, 4, 6, 12
+                            [option_b] => 1, 2, 3, 4, 5, 6
+                            [option_c] => 2, 4, 6, 8, 10, 12
+                            [option_d] => 1, 3, 5, 7, 9, 11
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 12 are: 1, 2, 3, 4, 6, 12 because they divide 12 exactly.
+                        )
+
+                    [10] => Array
+                        (
+                            [id] => 587
+                            [question_text] => Find the largest number that divides 132 and 176 exactly.
+                            [option_a] => 11
+                            [option_b] => 22
+                            [option_c] => 44
+                            [option_d] => 88
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => HCF of 132 and 176 is 44.
+                        )
+
+                    [11] => Array
+                        (
+                            [id] => 515
+                            [question_text] => Find the HCF of 8 and 12.
+                            [option_a] => 2
+                            [option_b] => 4
+                            [option_c] => 6
+                            [option_d] => 8
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 8: 1,2,4,8. Factors of 12: 1,2,3,4,6,12. Common factors: 1,2,4. HCF = 4.
+                        )
+
+                    [12] => Array
+                        (
+                            [id] => 553
+                            [question_text] => Find the HCF of 54 and 72 using prime factorization.
+                            [option_a] => 6
+                            [option_b] => 9
+                            [option_c] => 12
+                            [option_d] => 18
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 54 = 2 × 3³, 72 = 2³ × 3². Common factors: 2 × 3² = 2 × 9 = 18.
+                        )
+
+                    [13] => Array
+                        (
+                            [id] => 592
+                            [question_text] => Which of the following is the HCF of 8 and 15?
+                            [option_a] => 1
+                            [option_b] => 2
+                            [option_c] => 3
+                            [option_d] => 4
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 8 and 15 are co-prime, so HCF = 1.
+                        )
+
+                    [14] => Array
+                        (
+                            [id] => 548
+                            [question_text] => What is the HCF of 16 and 24 using prime factorization?
+                            [option_a] => 4
+                            [option_b] => 8
+                            [option_c] => 12
+                            [option_d] => 16
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 16 = 2⁴, 24 = 2³ × 3. Common factor: 2³ = 8.
+                        )
+
+                    [15] => Array
+                        (
+                            [id] => 566
+                            [question_text] => What is the HCF of 12, 30, and 42 using prime factorization?
+                            [option_a] => 3
+                            [option_b] => 6
+                            [option_c] => 9
+                            [option_d] => 12
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => hard
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 12 = 2² × 3, 30 = 2 × 3 × 5, 42 = 2 × 3 × 7. Common factors: 2 × 3 = 6.
+                        )
+
+                    [16] => Array
+                        (
+                            [id] => 509
+                            [question_text] => Is 4 a factor of 14?
+                            [option_a] => Yes
+                            [option_b] => No
+                            [option_c] => Sometimes
+                            [option_d] => Only when divided
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 14 ÷ 4 = 3.5, not a whole number, so 4 is not a factor of 14.
+                        )
+
+                    [17] => Array
+                        (
+                            [id] => 551
+                            [question_text] => What is the HCF of 48 and 72 using prime factorization?
+                            [option_a] => 12
+                            [option_b] => 16
+                            [option_c] => 24
+                            [option_d] => 36
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 48 = 2⁴ × 3, 72 = 2³ × 3². Common factors: 2³ × 3 = 8 × 3 = 24.
+                        )
+
+                    [18] => Array
+                        (
+                            [id] => 521
+                            [question_text] => Find the HCF of 20 and 25.
+                            [option_a] => 2
+                            [option_b] => 4
+                            [option_c] => 5
+                            [option_d] => 10
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 20: 1,2,4,5,10,20. Factors of 25: 1,5,25. Common factors: 1,5. HCF = 5.
+                        )
+
+                    [19] => Array
+                        (
+                            [id] => 512
+                            [question_text] => How many factors does a prime number have?
+                            [option_a] => 1
+                            [option_b] => 2
+                            [option_c] => 3
+                            [option_d] => 4
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => A prime number has exactly two factors: 1 and itself.
+                        )
+
+                )
+
+        )
+
+)
+
+[2026-03-06 12:08:21] [INFO] Fetching subjects from central
+[2026-03-06 12:08:21] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_subjects&api_key=HIDDEN
+[2026-03-06 12:08:23] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_topics&subject_id=2&api_key=HIDDEN
+[2026-03-06 12:08:25] [INFO] Previewing questions with params: {"subject_id":2,"topic_id":1197,"class":"","difficulty":"","limit":20,"type":"objective"}
+[2026-03-06 12:08:25] [INFO] Calling endpoint: ?action=get_questions&subject_id=2&topic_id=1197&limit=20&type=objective
+[2026-03-06 12:08:25] [INFO] Calling API: http://impactdigitalacademy.com.ng/school-central/api/?action=get_questions&subject_id=2&topic_id=1197&limit=20&type=objective&api_key=HIDDEN
+[2026-03-06 12:08:26] [INFO] Raw API response: Array
+(
+    [status] => success
+    [batch_id] => batch_69aab4f5682fc
+    [download_date] => 2026-03-06 12:05:25
+    [objective] => Array
+        (
+            [count] => 20
+            [questions] => Array
+                (
+                    [0] => Array
+                        (
+                            [id] => 582
+                            [question_text] => A school has 54 boys and 72 girls. They want to form teams with the same number of boys and the same number of girls in each team. What is the largest number of teams they can form?
+                            [option_a] => 6
+                            [option_b] => 9
+                            [option_c] => 12
+                            [option_d] => 18
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => hard
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => HCF of 54 and 72 is 18, so they can form 18 teams.
+                        )
+
+                    [1] => Array
+                        (
+                            [id] => 522
+                            [question_text] => What is the HCF of 24 and 36?
+                            [option_a] => 6
+                            [option_b] => 8
+                            [option_c] => 12
+                            [option_d] => 18
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 24: 1,2,3,4,6,8,12,24. Factors of 36: 1,2,3,4,6,9,12,18,36. Common factors: 1,2,3,4,6,12. HCF = 12.
+                        )
+
+                    [2] => Array
+                        (
+                            [id] => 565
+                            [question_text] => Find the HCF of 44, 66, and 88 using prime factorization.
+                            [option_a] => 11
+                            [option_b] => 22
+                            [option_c] => 33
+                            [option_d] => 44
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => hard
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 44 = 2² × 11, 66 = 2 × 3 × 11, 88 = 2³ × 11. Common factors: 2 × 11 = 22.
+                        )
+
+                    [3] => Array
+                        (
+                            [id] => 530
+                            [question_text] => What is the HCF of 21, 28, and 35?
+                            [option_a] => 3
+                            [option_b] => 5
+                            [option_c] => 7
+                            [option_d] => 14
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 21: 1,3,7,21. Factors of 28: 1,2,4,7,14,28. Factors of 35: 1,5,7,35. Common factors: 1,7. HCF = 7.
+                        )
+
+                    [4] => Array
+                        (
+                            [id] => 562
+                            [question_text] => Find the HCF of 18, 27, and 45 using prime factorization.
+                            [option_a] => 3
+                            [option_b] => 6
+                            [option_c] => 9
+                            [option_d] => 18
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => hard
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 18 = 2 × 3², 27 = 3³, 45 = 3² × 5. Common factor: 3² = 9.
+                        )
+
+                    [5] => Array
+                        (
+                            [id] => 578
+                            [question_text] => What is the greatest number that divides 84 and 126 exactly?
+                            [option_a] => 21
+                            [option_b] => 42
+                            [option_c] => 63
+                            [option_d] => 84
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => HCF of 84 and 126 is 42.
+                        )
+
+                    [6] => Array
+                        (
+                            [id] => 504
+                            [question_text] => List all the factors of 24.
+                            [option_a] => 1, 2, 3, 4, 6, 8, 12, 24
+                            [option_b] => 1, 2, 3, 4, 5, 6, 8, 12, 24
+                            [option_c] => 2, 4, 6, 8, 12, 24
+                            [option_d] => 1, 3, 6, 8, 12, 24
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 24: 1, 2, 3, 4, 6, 8, 12, 24.
+                        )
+
+                    [7] => Array
+                        (
+                            [id] => 514
+                            [question_text] => What is the HCF of 12 and 18?
+                            [option_a] => 3
+                            [option_b] => 4
+                            [option_c] => 6
+                            [option_d] => 9
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 12: 1,2,3,4,6,12. Factors of 18: 1,2,3,6,9,18. Common factors: 1,2,3,6. HCF = 6.
+                        )
+
+                    [8] => Array
+                        (
+                            [id] => 552
+                            [question_text] => Using prime factorization, find the HCF of 50 and 75.
+                            [option_a] => 5
+                            [option_b] => 10
+                            [option_c] => 15
+                            [option_d] => 25
+                            [correct_answer] => D
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 50 = 2 × 5², 75 = 3 × 5². Common factor: 5² = 25.
+                        )
+
+                    [9] => Array
+                        (
+                            [id] => 587
+                            [question_text] => Find the largest number that divides 132 and 176 exactly.
+                            [option_a] => 11
+                            [option_b] => 22
+                            [option_c] => 44
+                            [option_d] => 88
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => HCF of 132 and 176 is 44.
+                        )
+
+                    [10] => Array
+                        (
+                            [id] => 516
+                            [question_text] => What is the HCF of 16 and 24?
+                            [option_a] => 4
+                            [option_b] => 6
+                            [option_c] => 8
+                            [option_d] => 12
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 16: 1,2,4,8,16. Factors of 24: 1,2,3,4,6,8,12,24. Common factors: 1,2,4,8. HCF = 8.
+                        )
+
+                    [11] => Array
+                        (
+                            [id] => 585
+                            [question_text] => A florist has 60 roses and 84 lilies. She wants to make bouquets with the same number of roses and the same number of lilies in each bouquet. What is the largest number of bouquets she can make?
+                            [option_a] => 6
+                            [option_b] => 12
+                            [option_c] => 18
+                            [option_d] => 24
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => hard
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => HCF of 60 and 84 is 12, so she can make 12 bouquets.
+                        )
+
+                    [12] => Array
+                        (
+                            [id] => 581
+                            [question_text] => Two numbers are 36 and 48. What is the largest number that divides both of them?
+                            [option_a] => 6
+                            [option_b] => 8
+                            [option_c] => 12
+                            [option_d] => 16
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => HCF of 36 and 48 is 12.
+                        )
+
+                    [13] => Array
+                        (
+                            [id] => 502
+                            [question_text] => Find all the factors of 18.
+                            [option_a] => 1, 2, 3, 6, 9, 18
+                            [option_b] => 1, 2, 3, 4, 6, 9, 18
+                            [option_c] => 2, 3, 6, 9, 18
+                            [option_d] => 1, 3, 6, 9, 18
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 18: 1, 2, 3, 6, 9, 18.
+                        )
+
+                    [14] => Array
+                        (
+                            [id] => 506
+                            [question_text] => Find all the factors of 15.
+                            [option_a] => 1, 3, 5, 15
+                            [option_b] => 1, 2, 3, 5, 15
+                            [option_c] => 3, 5, 15
+                            [option_d] => 1, 5, 15
+                            [correct_answer] => A
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 15: 1, 3, 5, 15.
+                        )
+
+                    [15] => Array
+                        (
+                            [id] => 507
+                            [question_text] => Which of these numbers is a factor of 24?
+                            [option_a] => 5
+                            [option_b] => 7
+                            [option_c] => 8
+                            [option_d] => 9
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => easy
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 8 divides 24 exactly: 24 ÷ 8 = 3, so 8 is a factor.
+                        )
+
+                    [16] => Array
+                        (
+                            [id] => 555
+                            [question_text] => Using prime factorization, find the HCF of 12, 18, and 24.
+                            [option_a] => 3
+                            [option_b] => 6
+                            [option_c] => 9
+                            [option_d] => 12
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => hard
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => 12 = 2² × 3, 18 = 2 × 3², 24 = 2³ × 3. Common factors: 2 × 3 = 6.
+                        )
+
+                    [17] => Array
+                        (
+                            [id] => 570
+                            [question_text] => A teacher wants to divide 30 boys and 45 girls into groups with the same number of students in each group. What is the largest number of students each group can have?
+                            [option_a] => 5
+                            [option_b] => 10
+                            [option_c] => 15
+                            [option_d] => 20
+                            [correct_answer] => C
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => HCF of 30 and 45 is 15.
+                        )
+
+                    [18] => Array
+                        (
+                            [id] => 573
+                            [question_text] => A shop has 42 red pens and 56 blue pens. They want to pack them in boxes with the same number of pens in each box. What is the largest number of pens each box can contain?
+                            [option_a] => 7
+                            [option_b] => 14
+                            [option_c] => 21
+                            [option_d] => 28
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => HCF of 42 and 56 is 14.
+                        )
+
+                    [19] => Array
+                        (
+                            [id] => 540
+                            [question_text] => What is the HCF of 4, 8, and 12?
+                            [option_a] => 2
+                            [option_b] => 4
+                            [option_c] => 6
+                            [option_d] => 8
+                            [correct_answer] => B
+                            [subject_id] => 2
+                            [topic_id] => 1197
+                            [difficulty_level] => medium
+                            [marks] => 1
+                            [class_level] => JSS1
+                            [explanation] => Factors of 4: 1,2,4. Factors of 8: 1,2,4,8. Factors of 12: 1,2,3,4,6,12. Common factors: 1,2,4. HCF = 4.
+                        )
+
+                )
+
+        )
+
+)
+
