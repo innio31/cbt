@@ -1,15 +1,17 @@
 <?php
-// config.php - Mighty School for Valours CBT System Configuration
+// config.php - The Climax Brains Academy CBT System Configuration
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
+
+require_once __DIR__ . '/version.php';
 
 // Database configuration
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'cbt');
-define('SCHOOL_NAME', 'Mighty School for Valours, Ota');
+define('SCHOOL_NAME', 'The Climax Brains Academy, Ota');
 define('SYSTEM_NAME', 'Offline CBT System');
 
 // Add these school information constants
@@ -19,9 +21,9 @@ define('SCHOOL_PHONE', '+234 803 123 4567'); // Update with actual phone number
 define('SCHOOL_EMAIL', 'mforvalours@gmail.com');
 
 // System paths
-$base_url = 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/msv/';
+$base_url = 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/tcba/';
 define('BASE_URL', $base_url);
-define('UPLOAD_PATH', $_SERVER['DOCUMENT_ROOT'] . '/msv/uploads/');
+define('UPLOAD_PATH', $_SERVER['DOCUMENT_ROOT'] . '/tcba/uploads/');
 
 // Design colors - Climax Brains for Valours Theme
 define('COLOR_PRIMARY', '#2c3e50');
@@ -45,7 +47,7 @@ try {
     // Simple error display without using constants that might not be defined
     die("<div style='background: #2c3e50; color: white; padding: 20px; border-radius: 10px; text-align: center;'>
             <h1>🚨 Database Connection Error</h1>
-            <p><strong>Mighty School for Valours CBT System</strong></p>
+            <p><strong>The Climax Brains Academy CBT System</strong></p>
             <p>Unable to connect to database. Please contact administrator.</p>
             <p><small>Error: " . htmlspecialchars($e->getMessage()) . "</small></p>
         </div>");

@@ -2,7 +2,7 @@
 // admin/run_sql_update.php - Run SQL Updates
 session_start();
 
-if (!isset($_SESSION['admin_id']) || $_SESSION['admin_role'] !== 'super_admin') {
+if (!isset($_SESSION['admin_id']) || $_SESSION['admin_role'] !== 'admin') {
     die("Access denied");
 }
 

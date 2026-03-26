@@ -9,7 +9,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_username'])) {
 }
 
 // Only super_admin can perform updates
-if ($_SESSION['admin_role'] !== 'super_admin') {
+if ($_SESSION['admin_role'] !== 'admin') {
     header("Location: index.php?message=Access denied&type=error");
     exit();
 }
@@ -20,7 +20,7 @@ require_once '../includes/config.php';
 $current_version = defined('SYSTEM_VERSION') ? SYSTEM_VERSION : '1.0.0';
 
 // GitHub repository info (change to your repo)
-$github_repo = 'yourusername/your-repo-name'; // Change this
+$github_repo = 'innio31/cbt'; // Change this
 $github_api_url = "https://api.github.com/repos/{$github_repo}/releases/latest";
 
 // Function to check for updates
