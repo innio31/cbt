@@ -4,7 +4,7 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once __DIR__ . '/version.php';
+require_once __DIR__ . '/../version.txt';
 
 // Database configuration
 define('DB_HOST', 'localhost');
