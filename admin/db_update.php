@@ -1088,15 +1088,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])
                 align-items: flex-start;
             }
         }
+
+        .btn-back {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transition: all 0.3s;
+        }
+
+        .btn-back:hover {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <div class="card">
-            <div class="header">
-                <h1><i class="fas fa-database"></i> Database Migration Manager</h1>
-                <p>Ensures ALL tables exist AND all required columns are present</p>
+            <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1><i class="fas fa-database"></i> Database Migration Manager</h1>
+                    <p>Ensures ALL tables exist AND all required columns are present</p>
+                </div>
+                <a href="index.php" class="btn-back" style="background: rgba(52, 152, 219, 0.2); color: #3498db; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
             </div>
 
             <?php if ($message): ?>
