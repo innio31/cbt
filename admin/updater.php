@@ -1,5 +1,5 @@
 <?php
-// admin/updater.php - AJAX Version (Shows real progress)
+// admin/updater.php - Updates entire folders (admin/, student/, staff/)
 session_start();
 
 if (!isset($_SESSION['admin_id'])) {
@@ -34,30 +34,105 @@ function getLatestRelease($repo)
     return $data ?: null;
 }
 
+// Function to get all files in a GitHub folder recursively
+function getGitHubFiles($folder)
+{
+    global $github_repo, $branch;
+    $url = "https://api.github.com/repos/{$github_repo}/contents/{$folder}?ref={$branch}";
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'CBT-Updater/1.0');
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $data = json_decode($response, true);
+    $files = [];
+
+    if (is_array($data)) {
+        foreach ($data as $item) {
+            if ($item['type'] === 'file') {
+                $files[] = $item['path'];
+            } elseif ($item['type'] === 'dir') {
+                $sub_files = getGitHubFiles($item['path']);
+                $files = array_merge($files, $sub_files);
+            }
+        }
+    }
+
+    return $files;
+}
+
+// Function to download a single file
+function downloadFile($file_path)
+{
+    global $github_repo, $branch;
+    $url = "https://raw.githubusercontent.com/{$github_repo}/{$branch}/{$file_path}";
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'CBT-Updater/1.0');
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $content = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($http_code === 200 && $content) {
+        return $content;
+    }
+    return false;
+}
+
 // Handle AJAX requests
 if (isset($_GET['ajax'])) {
     header('Content-Type: application/json');
 
     $action = $_GET['action'] ?? '';
 
+    if ($action === 'get_files') {
+        $folders = ['admin', 'student', 'staff'];
+        $all_files = [];
+
+        foreach ($folders as $folder) {
+            $files = getGitHubFiles($folder);
+            $all_files = array_merge($all_files, $files);
+        }
+
+        // Add individual files
+        $individual_files = [
+            'version.txt',
+            'index.php',
+            'login.php',
+            'logout.php',
+            'includes/functions.php',
+            'includes/auth.php',
+        ];
+
+        $all_files = array_merge($all_files, $individual_files);
+
+        echo json_encode(['success' => true, 'files' => $all_files]);
+        exit();
+    }
+
     if ($action === 'update_file') {
         $file = $_GET['file'] ?? '';
-        $branch = $_GET['branch'] ?? 'main';
 
-        $url = "https://raw.githubusercontent.com/{$github_repo}/{$branch}/{$file}";
+        // Skip config.php
+        if (strpos($file, 'config.php') !== false) {
+            echo json_encode(['success' => true, 'message' => "⏭ Skipped (preserved): {$file}"]);
+            exit();
+        }
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'CBT-Updater/1.0');
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        $content = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $content = downloadFile($file);
 
-        if ($http_code === 200 && $content) {
+        if ($content !== false) {
             $local_path = '../' . $file;
             $dir = dirname($local_path);
 
@@ -71,23 +146,13 @@ if (isset($_GET['ajax'])) {
                 echo json_encode(['success' => false, 'message' => "✗ Failed to save: {$file}"]);
             }
         } else {
-            echo json_encode(['success' => false, 'message' => "✗ Failed to download: {$file} (HTTP {$http_code})"]);
+            echo json_encode(['success' => false, 'message' => "✗ Failed to download: {$file}"]);
         }
         exit();
     }
 
     if ($action === 'update_version') {
-        $url = "https://raw.githubusercontent.com/{$github_repo}/{$branch}/version.txt";
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'CBT-Updater/1.0');
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        $content = curl_exec($ch);
-        curl_close($ch);
+        $content = downloadFile('version.txt');
 
         if ($content) {
             $new_version = trim($content);
@@ -131,30 +196,6 @@ if (isset($_POST['check_updates'])) {
 $current_release = getLatestRelease($github_repo);
 $latest_version = $current_release && isset($current_release['tag_name']) ? ltrim($current_release['tag_name'], 'v') : 'Unknown';
 $update_available = $current_release && isset($current_release['tag_name']) ? version_compare($latest_version, $current_version, '>') : false;
-
-// List of files to update
-$files_to_update = [
-    'version.txt',
-    'index.php',
-    'login.php',
-    'logout.php',
-    'includes/functions.php',
-    'includes/auth.php',
-    'admin/index.php',
-    'admin/manage-students.php',
-    'admin/manage-staff.php',
-    'admin/manage-subjects.php',
-    'admin/manage-exams.php',
-    'admin/view-results.php',
-    'admin/reports.php',
-    'admin/db_update.php',
-    'student/index.php',
-    'student/dashboard.php',
-    'student/take-exam.php',
-    'staff/index.php',
-    'staff/dashboard.php',
-    'staff/manage-questions.php',
-];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -179,7 +220,7 @@ $files_to_update = [
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
         }
 
@@ -287,11 +328,6 @@ $files_to_update = [
             color: white;
         }
 
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
         .btn-success:hover,
         .btn-primary:hover {
             transform: translateY(-2px);
@@ -337,6 +373,10 @@ $files_to_update = [
             color: #89b4fa;
         }
 
+        .log-skip {
+            color: #fab387;
+        }
+
         .progress-bar {
             width: 100%;
             height: 6px;
@@ -364,21 +404,42 @@ $files_to_update = [
             border-top: 1px solid #e9ecef;
         }
 
-        .file-list {
+        .folder-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 15px;
             margin-top: 10px;
-            max-height: 150px;
-            overflow-y: auto;
         }
 
-        .file-tag {
-            background: #e9ecef;
-            padding: 4px 10px;
-            border-radius: 15px;
-            font-size: 0.7rem;
-            font-family: monospace;
+        .folder-tag {
+            background: #e8f4fc;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            color: #3498db;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
         }
 
         @media (max-width: 768px) {
@@ -399,7 +460,7 @@ $files_to_update = [
         <div class="header">
             <div>
                 <h1><i class="fas fa-sync-alt"></i> System Updater</h1>
-                <p>AJAX-powered real-time update</p>
+                <p>Updates entire admin/, student/, staff/ folders + core files</p>
             </div>
             <a href="index.php" class="btn-back"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
         </div>
@@ -426,11 +487,27 @@ $files_to_update = [
             <?php endif; ?>
 
             <?php if ($update_available): ?>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-number" id="totalFiles">-</div>
+                        <div class="stat-label">Total Files</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" id="updatedFiles">0</div>
+                        <div class="stat-label">Updated</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" id="skippedFiles">0</div>
+                        <div class="stat-label">Skipped</div>
+                    </div>
+                </div>
+
                 <div style="text-align: center;">
                     <button id="updateBtn" class="btn btn-success" onclick="startUpdate()">
-                        <i class="fas fa-download"></i> Start Update (<?php echo count($files_to_update); ?> files)
+                        <i class="fas fa-download"></i> Start Update
                     </button>
                 </div>
+
                 <div class="progress-bar" id="progressBar">
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
@@ -446,24 +523,30 @@ $files_to_update = [
 
             <hr>
 
-            <h3><i class="fas fa-file-alt"></i> Files to Update (<?php echo count($files_to_update); ?> files)</h3>
-            <div class="file-list">
-                <?php foreach ($files_to_update as $file): ?>
-                    <span class="file-tag"><?php echo htmlspecialchars($file); ?></span>
-                <?php endforeach; ?>
+            <h3><i class="fas fa-folder-open"></i> What Gets Updated</h3>
+            <div class="folder-list">
+                <span class="folder-tag"><i class="fas fa-folder"></i> admin/ (all files)</span>
+                <span class="folder-tag"><i class="fas fa-folder"></i> student/ (all files)</span>
+                <span class="folder-tag"><i class="fas fa-folder"></i> staff/ (all files)</span>
+                <span class="folder-tag"><i class="fas fa-file-code"></i> includes/functions.php</span>
+                <span class="folder-tag"><i class="fas fa-file-code"></i> includes/auth.php</span>
+                <span class="folder-tag"><i class="fas fa-file-code"></i> index.php, login.php, logout.php</span>
+                <span class="folder-tag"><i class="fas fa-file-code"></i> version.txt</span>
             </div>
 
             <div class="alert alert-info" style="margin-top: 15px;">
                 <i class="fas fa-shield-alt"></i>
-                <strong>Preserved:</strong> includes/config.php, uploads/, backups/, vendor/
+                <strong>Preserved:</strong> includes/config.php, uploads/, backups/, vendor/ (TCPDF, PhpSpreadsheet)
             </div>
         </div>
     </div>
 
     <script>
-        const files = <?php echo json_encode($files_to_update); ?>;
+        let files = [];
         let currentIndex = 0;
         let updateInProgress = false;
+        let updatedCount = 0;
+        let skippedCount = 0;
 
         function addLog(message, type = 'info') {
             const logDiv = document.getElementById('progressLog');
@@ -475,15 +558,15 @@ $files_to_update = [
             logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        function updateProgress() {
+        function updateStats() {
+            document.getElementById('updatedFiles').innerText = updatedCount;
+            document.getElementById('skippedFiles').innerText = skippedCount;
             const percent = (currentIndex / files.length) * 100;
-            const fill = document.getElementById('progressFill');
-            fill.style.width = percent + '%';
+            document.getElementById('progressFill').style.width = percent + '%';
         }
 
         function updateFile(index) {
             if (index >= files.length) {
-                // All files updated, now update version
                 addLog('All files updated! Updating version...', 'info');
 
                 fetch('?ajax=1&action=update_version')
@@ -499,20 +582,26 @@ $files_to_update = [
             }
 
             const file = files[index];
-            addLog(`Downloading: ${file}`, 'info');
 
             fetch(`?ajax=1&action=update_file&file=${encodeURIComponent(file)}`)
                 .then(response => response.json())
                 .then(data => {
-                    addLog(data.message, data.success ? 'success' : 'error');
+                    addLog(data.message, data.success ? (data.message.includes('Skipped') ? 'skip' : 'success') : 'error');
+
+                    if (data.message.includes('Skipped')) {
+                        skippedCount++;
+                    } else if (data.success) {
+                        updatedCount++;
+                    }
+
                     currentIndex++;
-                    updateProgress();
+                    updateStats();
                     updateFile(currentIndex);
                 })
                 .catch(error => {
                     addLog(`Error updating ${file}: ${error.message}`, 'error');
                     currentIndex++;
-                    updateProgress();
+                    updateStats();
                     updateFile(currentIndex);
                 });
         }
@@ -523,9 +612,11 @@ $files_to_update = [
                 return;
             }
 
-            if (confirm('Start update? This will update ' + files.length + ' files.\n\nYour config.php and uploaded files will be preserved.\n\nDo not close this page until complete.')) {
+            if (confirm('Start update?\n\nThis will update ALL files in:\n• admin/ folder\n• student/ folder\n• staff/ folder\n• Core files (index.php, login.php, etc.)\n\nYour config.php and uploaded files will be preserved.\n\nDo not close this page until complete.')) {
                 updateInProgress = true;
                 currentIndex = 0;
+                updatedCount = 0;
+                skippedCount = 0;
 
                 // Clear log
                 const logDiv = document.getElementById('progressLog');
@@ -538,14 +629,34 @@ $files_to_update = [
                 // Disable button
                 const btn = document.getElementById('updateBtn');
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching file list...';
 
                 addLog('🚀 Starting update process...', 'info');
-                addLog(`Total files: ${files.length}`, 'info');
-                addLog('----------------------------------------', 'info');
 
-                // Start updating
-                updateFile(0);
+                // First get all files from GitHub
+                fetch('?ajax=1&action=get_files')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.files) {
+                            files = data.files;
+                            document.getElementById('totalFiles').innerText = files.length;
+                            addLog(`Total files to process: ${files.length}`, 'info');
+                            addLog('----------------------------------------', 'info');
+                            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                            updateFile(0);
+                        } else {
+                            addLog('Failed to get file list from GitHub', 'error');
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-download"></i> Start Update';
+                            updateInProgress = false;
+                        }
+                    })
+                    .catch(error => {
+                        addLog(`Error: ${error.message}`, 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-download"></i> Start Update';
+                        updateInProgress = false;
+                    });
             }
         }
     </script>
