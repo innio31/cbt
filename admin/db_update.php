@@ -10,13 +10,17 @@ if (!isset($_SESSION['admin_id']) || $_SESSION['admin_role'] !== 'admin') {
 require_once '../includes/config.php';
 
 // Create migration tracking table if it doesn't exist
-$pdo->exec("CREATE TABLE IF NOT EXISTS migrations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    version VARCHAR(50) NOT NULL,
-    description TEXT,
-    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_version (version)
-)");
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS migrations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        version VARCHAR(50) NOT NULL,
+        description TEXT,
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_version (version)
+    )");
+} catch (PDOException $e) {
+    // Table might already exist, continue
+}
 
 // Helper function to check if a table exists
 function tableExists($pdo, $table)
@@ -50,16 +54,6 @@ function addColumnIfNotExists($pdo, $table, $column, $definition, &$sql_statemen
 {
     if (tableExists($pdo, $table) && !columnExists($pdo, $table, $column)) {
         $sql_statements[] = "ALTER TABLE `$table` ADD COLUMN $column $definition";
-        return true;
-    }
-    return false;
-}
-
-// Helper function to modify column if needed
-function modifyColumnIfExists($pdo, $table, $column, $definition, &$sql_statements)
-{
-    if (tableExists($pdo, $table) && columnExists($pdo, $table, $column)) {
-        $sql_statements[] = "ALTER TABLE `$table` MODIFY COLUMN $column $definition";
         return true;
     }
     return false;
@@ -183,8 +177,7 @@ $migrations = [
                 relationship ENUM('A','B','C','D','E') DEFAULT NULL,
                 self_control ENUM('A','B','C','D','E') DEFAULT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY unique_student_session_term (student_id, session, term)
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
             addColumnIfNotExists($pdo, 'affective_traits', 'student_id', 'INT NOT NULL', $sql_statements);
@@ -201,7 +194,7 @@ $migrations = [
             addColumnIfNotExists($pdo, 'affective_traits', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
             addColumnIfNotExists($pdo, 'affective_traits', 'updated_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql_statements);
 
-            // Add unique index
+            // Add unique index (using ALTER TABLE with error suppression for duplicates)
             $sql_statements[] = "ALTER TABLE affective_traits ADD UNIQUE INDEX IF NOT EXISTS unique_student_session_term (student_id, session, term)";
 
             // ============================================
@@ -266,8 +259,7 @@ $migrations = [
                 student_id INT NOT NULL,
                 date DATE NOT NULL,
                 status ENUM('present', 'absent', 'late') DEFAULT 'present',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                KEY (student_id, date)
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
             addColumnIfNotExists($pdo, 'attendance', 'student_id', 'INT NOT NULL', $sql_statements);
@@ -474,8 +466,7 @@ $migrations = [
                 success TINYINT(1) NOT NULL DEFAULT 0,
                 ip_address VARCHAR(45) DEFAULT NULL,
                 user_agent TEXT DEFAULT NULL,
-                attempt_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                KEY idx_username_time (username, attempt_time)
+                attempt_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
             addColumnIfNotExists($pdo, 'login_attempts', 'username', 'VARCHAR(100) NOT NULL', $sql_statements);
@@ -552,9 +543,7 @@ $migrations = [
                 token VARCHAR(64) NOT NULL UNIQUE,
                 expires_at DATETIME NOT NULL,
                 used TINYINT(1) DEFAULT 0,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                KEY idx_token (token),
-                KEY idx_expires (expires_at)
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
             addColumnIfNotExists($pdo, 'password_resets', 'user_id', 'INT NOT NULL', $sql_statements);
@@ -579,8 +568,7 @@ $migrations = [
                 drawing_painting ENUM('A','B','C','D','E') DEFAULT NULL,
                 musical_skills ENUM('A','B','C','D','E') DEFAULT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY unique_student_session_term (student_id, session, term)
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
             addColumnIfNotExists($pdo, 'psychomotor_skills', 'student_id', 'INT NOT NULL', $sql_statements);
@@ -617,8 +605,7 @@ $migrations = [
                 show_lowest_highest_avg TINYINT(1) DEFAULT 1,
                 show_lowest_highest_class TINYINT(1) DEFAULT 1,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY unique_session_term_class (session, term, class)
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
             addColumnIfNotExists($pdo, 'report_card_settings', 'session', 'VARCHAR(20) NOT NULL', $sql_statements);
@@ -767,8 +754,7 @@ $migrations = [
                 days_present INT DEFAULT 0,
                 days_absent INT DEFAULT 0,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY unique_student_session_term (student_id, session, term)
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
             addColumnIfNotExists($pdo, 'student_comments', 'student_id', 'INT NOT NULL', $sql_statements);
@@ -796,8 +782,7 @@ $migrations = [
                 average DECIMAL(5,2) DEFAULT 0.00,
                 promoted_to VARCHAR(50) DEFAULT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY unique_student_session_term (student_id, session, term)
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
             addColumnIfNotExists($pdo, 'student_positions', 'student_id', 'INT NOT NULL', $sql_statements);
@@ -887,8 +872,7 @@ $migrations = [
                 id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 subject_id INT NOT NULL,
                 class VARCHAR(50) NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY unique_subject_class (subject_id, class)
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
             addColumnIfNotExists($pdo, 'subject_classes', 'subject_id', 'INT NOT NULL', $sql_statements);
@@ -987,28 +971,6 @@ $migrations = [
             addIndexIfNotExists($pdo, 'password_resets', 'idx_token', 'token', $sql_statements);
             addIndexIfNotExists($pdo, 'password_resets', 'idx_expires', 'expires_at', $sql_statements);
 
-            // Add unique indexes
-            $sql_statements[] = "ALTER TABLE affective_traits ADD UNIQUE INDEX IF NOT EXISTS unique_student_session_term (student_id, session, term)";
-            $sql_statements[] = "ALTER TABLE psychomotor_skills ADD UNIQUE INDEX IF NOT EXISTS unique_student_session_term (student_id, session, term)";
-            $sql_statements[] = "ALTER TABLE report_card_settings ADD UNIQUE INDEX IF NOT EXISTS unique_session_term_class (session, term, class)";
-            $sql_statements[] = "ALTER TABLE student_comments ADD UNIQUE INDEX IF NOT EXISTS unique_student_session_term (student_id, session, term)";
-            $sql_statements[] = "ALTER TABLE student_positions ADD UNIQUE INDEX IF NOT EXISTS unique_student_session_term (student_id, session, term)";
-            $sql_statements[] = "ALTER TABLE subject_classes ADD UNIQUE INDEX IF NOT EXISTS unique_subject_class (subject_id, class)";
-
-            // ============================================
-            // ADD FOREIGN KEYS (if tables exist)
-            // ============================================
-            addForeignKeyIfNotExists($pdo, 'affective_traits', 'fk_affective_student', 'student_id', 'students', 'id', $sql_statements);
-            addForeignKeyIfNotExists($pdo, 'attendance', 'fk_attendance_student', 'student_id', 'students', 'id', $sql_statements);
-            addForeignKeyIfNotExists($pdo, 'exam_assignments', 'fk_exam_assignments_student', 'student_id', 'students', 'id', $sql_statements);
-            addForeignKeyIfNotExists($pdo, 'exam_assignments', 'fk_exam_assignments_exam', 'exam_id', 'exams', 'id', $sql_statements);
-            addForeignKeyIfNotExists($pdo, 'psychomotor_skills', 'fk_psychomotor_student', 'student_id', 'students', 'id', $sql_statements);
-            addForeignKeyIfNotExists($pdo, 'student_comments', 'fk_comments_student', 'student_id', 'students', 'id', $sql_statements);
-            addForeignKeyIfNotExists($pdo, 'student_positions', 'fk_positions_student', 'student_id', 'students', 'id', $sql_statements);
-            addForeignKeyIfNotExists($pdo, 'subject_classes', 'fk_subject_classes_subject', 'subject_id', 'subjects', 'id', $sql_statements);
-            addForeignKeyIfNotExists($pdo, 'students', 'fk_students_class_id', 'class_id', 'classes', 'id', $sql_statements);
-            addForeignKeyIfNotExists($pdo, 'exams', 'fk_exams_group_id', 'group_id', 'subject_groups', 'id', $sql_statements);
-
             return $sql_statements;
         }
     ],
@@ -1033,16 +995,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
     $version = $_POST['version'];
 
     if (isset($migrations[$version])) {
-        $transactionStarted = false;
+        $inTransaction = false;
         try {
-            // Get SQL statements first (this might throw exceptions)
+            // Get SQL statements first
             $sql_statements = $migrations[$version]['sql']($pdo);
 
-            // Start transaction only after we have valid SQL
+            // Start transaction
             $pdo->beginTransaction();
-            $transactionStarted = true;
+            $inTransaction = true;
 
             $executed = 0;
+            $errors = [];
 
             foreach ($sql_statements as $statement) {
                 if (!empty($statement)) {
@@ -1050,17 +1013,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
                         $pdo->exec($statement);
                         $executed++;
                     } catch (PDOException $e) {
-                        // Ignore "already exists" errors
                         $errorMsg = $e->getMessage();
+                        // Ignore "already exists" errors but track other errors
                         if (
                             strpos($errorMsg, 'Duplicate') === false &&
                             strpos($errorMsg, 'already exists') === false &&
                             strpos($errorMsg, 'Duplicate key') === false &&
                             strpos($errorMsg, 'exists') === false &&
                             strpos($errorMsg, 'already has') === false &&
-                            strpos($errorMsg, 'Multiple primary key') === false
+                            strpos($errorMsg, 'Multiple primary key') === false &&
+                            strpos($errorMsg, 'duplicate') === false
                         ) {
-                            throw $e;
+                            $errors[] = $errorMsg;
+                            throw $e; // Throw to trigger rollback
                         } else {
                             $executed++;
                         }
@@ -1068,31 +1033,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
                 }
             }
 
-            // Use INSERT IGNORE to skip if already exists
-            $stmt = $pdo->prepare("INSERT IGNORE INTO migrations (version, description) VALUES (?, ?)");
-            $stmt->execute([$version, $migrations[$version]['description']]);
+            // Check if we have errors
+            if (empty($errors)) {
+                // Insert migration record using INSERT IGNORE
+                $stmt = $pdo->prepare("INSERT IGNORE INTO migrations (version, description) VALUES (?, ?)");
+                $stmt->execute([$version, $migrations[$version]['description']]);
 
-            $pdo->commit();
-            $transactionStarted = false;
+                $pdo->commit();
+                $inTransaction = false;
 
-            $message = "Migration {$version} applied successfully! ({$executed} changes)";
-            $message_type = "success";
+                $message = "Migration {$version} applied successfully! ({$executed} changes)";
+                $message_type = "success";
 
-            // Refresh
-            $stmt = $pdo->query("SELECT version FROM migrations");
-            $applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
-            $pending = [];
-            foreach ($migrations as $v => $m) {
-                if (!in_array($v, $applied) && version_compare($v, $current_version, '<=')) {
-                    $pending[$v] = $m;
+                // Refresh pending list
+                $stmt = $pdo->query("SELECT version FROM migrations");
+                $applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                $pending = [];
+                foreach ($migrations as $v => $m) {
+                    if (!in_array($v, $applied) && version_compare($v, $current_version, '<=')) {
+                        $pending[$v] = $m;
+                    }
                 }
+            } else {
+                throw new Exception("Errors encountered: " . implode(", ", $errors));
             }
         } catch (Exception $e) {
-            if ($transactionStarted) {
+            if ($inTransaction) {
                 try {
                     $pdo->rollBack();
                 } catch (Exception $rollbackError) {
-                    // Rollback failed, but we already have an error
+                    // Log rollback error if needed
                 }
             }
             $message = "Error: " . $e->getMessage();
@@ -1105,18 +1075,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])) {
     $all_success = true;
     $results = [];
+    $inTransaction = false;
 
     foreach ($pending as $version => $migration) {
-        $transactionStarted = false;
         try {
             // Get SQL statements first
             $sql_statements = $migration['sql']($pdo);
 
             // Start transaction
             $pdo->beginTransaction();
-            $transactionStarted = true;
+            $inTransaction = true;
 
             $executed = 0;
+            $errors = [];
 
             foreach ($sql_statements as $statement) {
                 if (!empty($statement)) {
@@ -1131,8 +1102,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])
                             strpos($errorMsg, 'Duplicate key') === false &&
                             strpos($errorMsg, 'exists') === false &&
                             strpos($errorMsg, 'already has') === false &&
-                            strpos($errorMsg, 'Multiple primary key') === false
+                            strpos($errorMsg, 'Multiple primary key') === false &&
+                            strpos($errorMsg, 'duplicate') === false
                         ) {
+                            $errors[] = $errorMsg;
                             throw $e;
                         }
                         $executed++;
@@ -1140,14 +1113,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])
                 }
             }
 
-            $stmt = $pdo->prepare("INSERT INTO migrations (version, description) VALUES (?, ?)");
-            $stmt->execute([$version, $migration['description']]);
+            if (empty($errors)) {
+                $stmt = $pdo->prepare("INSERT IGNORE INTO migrations (version, description) VALUES (?, ?)");
+                $stmt->execute([$version, $migration['description']]);
 
-            $pdo->commit();
-            $transactionStarted = false;
-            $results[] = "✓ {$version}: {$migration['description']}";
+                $pdo->commit();
+                $inTransaction = false;
+                $results[] = "✓ {$version}: {$migration['description']}";
+            } else {
+                throw new Exception("Errors: " . implode(", ", $errors));
+            }
         } catch (Exception $e) {
-            if ($transactionStarted) {
+            if ($inTransaction) {
                 try {
                     $pdo->rollBack();
                 } catch (Exception $rollbackError) {
@@ -1638,7 +1615,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])
     <script>
         function toggleDetails(version) {
             const details = document.getElementById('details-' + version);
-            details.classList.toggle('show');
+            if (details) {
+                details.classList.toggle('show');
+            }
         }
 
         function backupDatabase() {
