@@ -1,9 +1,20 @@
 <?php
+// Add these lines at the very top for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 // admin/db_update.php - Complete Database Migration with Column Checks
 session_start();
 
-if (!isset($_SESSION['admin_id']) || $_SESSION['admin_role'] !== 'admin') {
+// Check if admin is logged in
+if (!isset($_SESSION['admin_id'])) {
     header("Location: ../login.php");
+    exit();
+}
+
+// Allow super_admin and admin to access
+if ($_SESSION['admin_role'] !== 'admin' && $_SESSION['admin_role'] !== 'super_admin') {
+    header("Location: index.php?message=Access denied&type=error");
     exit();
 }
 
