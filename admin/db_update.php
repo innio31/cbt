@@ -78,31 +78,6 @@ function addIndexIfNotExists($pdo, $table, $index, $columns, &$sql_statements)
     return false;
 }
 
-// Helper function to add foreign key if it doesn't exist
-function addForeignKeyIfNotExists($pdo, $table, $constraint, $column, $ref_table, $ref_column, &$sql_statements)
-{
-    try {
-        if (!tableExists($pdo, $table) || !tableExists($pdo, $ref_table)) {
-            return false;
-        }
-        $stmt = $pdo->prepare("
-            SELECT CONSTRAINT_NAME 
-            FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-            WHERE TABLE_SCHEMA = DATABASE() 
-            AND TABLE_NAME = ? 
-            AND CONSTRAINT_NAME = ?
-        ");
-        $stmt->execute([$table, $constraint]);
-        if ($stmt->rowCount() == 0) {
-            $sql_statements[] = "ALTER TABLE `$table` ADD CONSTRAINT `$constraint` FOREIGN KEY (`$column`) REFERENCES `$ref_table`(`$ref_column`) ON DELETE CASCADE";
-            return true;
-        }
-    } catch (PDOException $e) {
-        // Ignore errors
-    }
-    return false;
-}
-
 // Get applied migrations
 $stmt = $pdo->query("SELECT version FROM migrations");
 $applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -194,8 +169,8 @@ $migrations = [
             addColumnIfNotExists($pdo, 'affective_traits', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
             addColumnIfNotExists($pdo, 'affective_traits', 'updated_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql_statements);
 
-            // Add unique index (using ALTER TABLE with error suppression for duplicates)
-            $sql_statements[] = "ALTER TABLE affective_traits ADD UNIQUE INDEX IF NOT EXISTS unique_student_session_term (student_id, session, term)";
+            // Add unique index
+            $sql_statements[] = "ALTER TABLE affective_traits ADD UNIQUE INDEX unique_student_session_term (student_id, session, term)";
 
             // ============================================
             // TABLE: assignments
@@ -995,57 +970,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
     $version = $_POST['version'];
 
     if (isset($migrations[$version])) {
-        $inTransaction = false;
+        $transactionStarted = false;
         try {
-            // Get SQL statements first
-            $sql_statements = $migrations[$version]['sql']($pdo);
+            // First, check if migration already applied
+            $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM migrations WHERE version = ?");
+            $checkStmt->execute([$version]);
+            if ($checkStmt->fetchColumn() > 0) {
+                $message = "Migration {$version} has already been applied.";
+                $message_type = "info";
+            } else {
+                // Get SQL statements first (this might throw exceptions)
+                $sql_statements = $migrations[$version]['sql']($pdo);
 
-            // Start transaction
-            $pdo->beginTransaction();
-            $inTransaction = true;
+                // Start transaction only after we have valid SQL
+                $pdo->beginTransaction();
+                $transactionStarted = true;
 
-            $executed = 0;
-            $errors = [];
+                $executed = 0;
+                $errors = [];
 
-            foreach ($sql_statements as $statement) {
-                if (!empty($statement)) {
-                    try {
-                        $pdo->exec($statement);
-                        $executed++;
-                    } catch (PDOException $e) {
-                        $errorMsg = $e->getMessage();
-                        // Ignore "already exists" errors but track other errors
-                        if (
-                            strpos($errorMsg, 'Duplicate') === false &&
-                            strpos($errorMsg, 'already exists') === false &&
-                            strpos($errorMsg, 'Duplicate key') === false &&
-                            strpos($errorMsg, 'exists') === false &&
-                            strpos($errorMsg, 'already has') === false &&
-                            strpos($errorMsg, 'Multiple primary key') === false &&
-                            strpos($errorMsg, 'duplicate') === false
-                        ) {
-                            $errors[] = $errorMsg;
-                            throw $e; // Throw to trigger rollback
-                        } else {
+                foreach ($sql_statements as $statement) {
+                    if (!empty($statement)) {
+                        try {
+                            $pdo->exec($statement);
                             $executed++;
+                        } catch (PDOException $e) {
+                            $errorMsg = $e->getMessage();
+                            // Ignore "already exists" errors
+                            if (
+                                stripos($errorMsg, 'duplicate') !== false ||
+                                stripos($errorMsg, 'already exists') !== false ||
+                                stripos($errorMsg, 'duplicate key') !== false ||
+                                stripos($errorMsg, 'already has') !== false ||
+                                stripos($errorMsg, 'multiple primary key') !== false
+                            ) {
+                                $executed++;
+                                continue;
+                            }
+                            $errors[] = $errorMsg;
+                            throw $e;
                         }
                     }
                 }
-            }
 
-            // Check if we have errors
-            if (empty($errors)) {
-                // Insert migration record using INSERT IGNORE
-                $stmt = $pdo->prepare("INSERT IGNORE INTO migrations (version, description) VALUES (?, ?)");
+                // Insert migration record
+                $stmt = $pdo->prepare("INSERT INTO migrations (version, description) VALUES (?, ?)");
                 $stmt->execute([$version, $migrations[$version]['description']]);
 
                 $pdo->commit();
-                $inTransaction = false;
+                $transactionStarted = false;
 
                 $message = "Migration {$version} applied successfully! ({$executed} changes)";
                 $message_type = "success";
 
-                // Refresh pending list
+                // Refresh applied migrations
                 $stmt = $pdo->query("SELECT version FROM migrations");
                 $applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 $pending = [];
@@ -1054,15 +1032,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
                         $pending[$v] = $m;
                     }
                 }
-            } else {
-                throw new Exception("Errors encountered: " . implode(", ", $errors));
             }
         } catch (Exception $e) {
-            if ($inTransaction) {
+            if ($transactionStarted) {
                 try {
                     $pdo->rollBack();
                 } catch (Exception $rollbackError) {
-                    // Log rollback error if needed
+                    // Rollback failed, but we already have an error
                 }
             }
             $message = "Error: " . $e->getMessage();
@@ -1075,16 +1051,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])) {
     $all_success = true;
     $results = [];
-    $inTransaction = false;
 
     foreach ($pending as $version => $migration) {
+        $transactionStarted = false;
         try {
+            // Check if migration already applied
+            $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM migrations WHERE version = ?");
+            $checkStmt->execute([$version]);
+            if ($checkStmt->fetchColumn() > 0) {
+                $results[] = "⏭ {$version}: Already applied, skipping";
+                continue;
+            }
+
             // Get SQL statements first
             $sql_statements = $migration['sql']($pdo);
 
             // Start transaction
             $pdo->beginTransaction();
-            $inTransaction = true;
+            $transactionStarted = true;
 
             $executed = 0;
             $errors = [];
@@ -1097,34 +1081,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])
                     } catch (PDOException $e) {
                         $errorMsg = $e->getMessage();
                         if (
-                            strpos($errorMsg, 'Duplicate') === false &&
-                            strpos($errorMsg, 'already exists') === false &&
-                            strpos($errorMsg, 'Duplicate key') === false &&
-                            strpos($errorMsg, 'exists') === false &&
-                            strpos($errorMsg, 'already has') === false &&
-                            strpos($errorMsg, 'Multiple primary key') === false &&
-                            strpos($errorMsg, 'duplicate') === false
+                            stripos($errorMsg, 'duplicate') !== false ||
+                            stripos($errorMsg, 'already exists') !== false ||
+                            stripos($errorMsg, 'duplicate key') !== false ||
+                            stripos($errorMsg, 'already has') !== false ||
+                            stripos($errorMsg, 'multiple primary key') !== false
                         ) {
-                            $errors[] = $errorMsg;
-                            throw $e;
+                            $executed++;
+                            continue;
                         }
-                        $executed++;
+                        $errors[] = $errorMsg;
+                        throw $e;
                     }
                 }
             }
 
-            if (empty($errors)) {
-                $stmt = $pdo->prepare("INSERT IGNORE INTO migrations (version, description) VALUES (?, ?)");
-                $stmt->execute([$version, $migration['description']]);
+            $stmt = $pdo->prepare("INSERT INTO migrations (version, description) VALUES (?, ?)");
+            $stmt->execute([$version, $migration['description']]);
 
-                $pdo->commit();
-                $inTransaction = false;
-                $results[] = "✓ {$version}: {$migration['description']}";
-            } else {
-                throw new Exception("Errors: " . implode(", ", $errors));
-            }
+            $pdo->commit();
+            $transactionStarted = false;
+            $results[] = "✓ {$version}: {$migration['description']} ({$executed} changes)";
         } catch (Exception $e) {
-            if ($inTransaction) {
+            if ($transactionStarted) {
                 try {
                     $pdo->rollBack();
                 } catch (Exception $rollbackError) {
@@ -1141,6 +1120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])
         $message = "All migrations applied successfully!<br>" . implode('<br>', $results);
         $message_type = "success";
 
+        // Refresh applied migrations
         $stmt = $pdo->query("SELECT version FROM migrations");
         $applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
         $pending = [];

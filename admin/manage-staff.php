@@ -53,10 +53,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "Full name is required";
         }
 
-        if (empty($email)) {
-            $errors[] = "Email is required";
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Invalid email format";
+        // Validate email - only if provided
+        if (!empty($email)) {
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Invalid email format";
+            }
+
+            // Check if email already exists
+            $stmt = $pdo->prepare("SELECT id FROM staff WHERE email = ?");
+            $stmt->execute([$email]);
+            if ($stmt->fetch()) {
+                $errors[] = "Email already registered";
+            }
+        } else {
+            $email = null; // Set to NULL for database
         }
 
         if (empty($password)) {
@@ -76,21 +86,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "Staff ID already exists";
         }
 
-        // Check if email already exists
-        $stmt = $pdo->prepare("SELECT id FROM staff WHERE email = ?");
-        $stmt->execute([$email]);
-        if ($stmt->fetch()) {
-            $errors[] = "Email already registered";
-        }
-
         if (empty($errors)) {
             try {
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
                 $stmt = $pdo->prepare("
-                    INSERT INTO staff (staff_id, password, full_name, email, role, is_active, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, NOW())
-                ");
+                INSERT INTO staff (staff_id, password, full_name, email, role, is_active, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
+            ");
 
                 $stmt->execute([
                     $staff_id_num,
@@ -126,17 +129,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "Full name is required";
         }
 
-        if (empty($email)) {
-            $errors[] = "Email is required";
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Invalid email format";
-        }
+        // Validate email - only if provided
+        if (!empty($email)) {
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Invalid email format";
+            }
 
-        // Check if email already exists (excluding current staff)
-        $stmt = $pdo->prepare("SELECT id FROM staff WHERE email = ? AND id != ?");
-        $stmt->execute([$email, $staff_id]);
-        if ($stmt->fetch()) {
-            $errors[] = "Email already registered to another staff";
+            // Check if email already exists (excluding current staff)
+            $stmt = $pdo->prepare("SELECT id FROM staff WHERE email = ? AND id != ?");
+            $stmt->execute([$email, $staff_id]);
+            if ($stmt->fetch()) {
+                $errors[] = "Email already registered to another staff";
+            }
+        } else {
+            $email = null; // Set to NULL for database
         }
 
         if ($change_password) {
@@ -160,10 +166,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
                     $stmt = $pdo->prepare("
-                        UPDATE staff 
-                        SET full_name = ?, email = ?, role = ?, is_active = ?, password = ?
-                        WHERE id = ?
-                    ");
+                    UPDATE staff 
+                    SET full_name = ?, email = ?, role = ?, is_active = ?, password = ?
+                    WHERE id = ?
+                ");
 
                     $stmt->execute([
                         $full_name,
@@ -175,10 +181,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 } else {
                     $stmt = $pdo->prepare("
-                        UPDATE staff 
-                        SET full_name = ?, email = ?, role = ?, is_active = ?
-                        WHERE id = ?
-                    ");
+                    UPDATE staff 
+                    SET full_name = ?, email = ?, role = ?, is_active = ?
+                    WHERE id = ?
+                ");
 
                     $stmt->execute([
                         $full_name,
@@ -1009,7 +1015,14 @@ if ($action === 'delete' && isset($_GET['id'])) {
                                             <span class="status-badge" style="background: #d6eaf8; color: #2980b9; margin-left: 5px;">Admin</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td><?php echo htmlspecialchars($staff_member['email']); ?></td>
+                                    <td>
+                                        <?php
+                                        $email_value = isset($staff_member['email']) && !empty($staff_member['email'])
+                                            ? htmlspecialchars($staff_member['email'])
+                                            : '<span style="color: #999;">Not provided</span>';
+                                        echo $email_value;
+                                        ?>
+                                    </td>
                                     <td><?php echo ucfirst($staff_member['role']); ?></td>
                                     <td>
                                         <span class="status-badge <?php echo $staff_member['is_active'] ? 'status-active' : 'status-inactive'; ?>">
@@ -1106,10 +1119,10 @@ if ($action === 'delete' && isset($_GET['id'])) {
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Email Address *</label>
+                            <label class="form-label">Email Address (Optional)</label>
                             <input type="email" name="email" class="form-control"
-                                value="<?php echo $action === 'edit' ? htmlspecialchars($staff['email']) : ''; ?>"
-                                required>
+                                value="<?php echo $action === 'edit' ? (isset($staff['email']) ? htmlspecialchars($staff['email']) : '') : ''; ?>">
+                            <small style="color: #666; font-size: 0.85rem;">Optional - can be left blank</small>
                         </div>
 
                         <div class="form-group">
@@ -1324,7 +1337,14 @@ if ($action === 'delete' && isset($_GET['id'])) {
                             </tr>
                             <tr>
                                 <td style="padding: 10px 0; color: #666;">Email:</td>
-                                <td style="padding: 10px 0; font-weight: 500;"><?php echo htmlspecialchars($staff['email']); ?></td>
+                                <td style="padding: 10px 0; font-weight: 500;">
+                                    <?php
+                                    $email_display = isset($staff['email']) && !empty($staff['email'])
+                                        ? htmlspecialchars($staff['email'])
+                                        : 'Not provided';
+                                    echo $email_display;
+                                    ?>
+                                </td>
                             </tr>
                             <tr>
                                 <td style="padding: 10px 0; color: #666;">Role:</td>
@@ -1452,7 +1472,8 @@ if ($action === 'delete' && isset($_GET['id'])) {
             const forms = document.querySelectorAll('form');
             forms.forEach(form => {
                 form.addEventListener('submit', function(e) {
-                    const requiredFields = form.querySelectorAll('[required]');
+                    // Skip validation for email field since it's optional
+                    const requiredFields = form.querySelectorAll('[required]:not([name="email"])');
                     let isValid = true;
 
                     requiredFields.forEach(field => {
