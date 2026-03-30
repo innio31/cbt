@@ -7,14 +7,26 @@ if (!isAdminLoggedIn()) {
     exit();
 }
 
-$current_session = date('Y') . '/' . (date('Y') + 1);
-$current_term = 'First';
+// --- Determine the most recent session and term from settings ---
+$most_recent = $pdo->query("SELECT session, term FROM report_card_settings ORDER BY session DESC, 
+                            CASE term WHEN 'Third' THEN 3 WHEN 'Second' THEN 2 WHEN 'First' THEN 1 END DESC LIMIT 1")->fetch();
+
+if ($most_recent) {
+    $default_session = $most_recent['session'];
+    $default_term = $most_recent['term'];
+} else {
+    // Fallback to current year if no settings exist
+    $default_session = date('Y') . '/' . (date('Y') + 1);
+    $default_term = 'First';
+}
 
 // Get classes
 $classes = $pdo->query("SELECT DISTINCT class FROM students ORDER BY class")->fetchAll();
 
 $selected_class = $_POST['class'] ?? '';
 $selected_student_id = $_POST['student_id'] ?? '';
+$session = $_POST['session'] ?? $default_session;
+$term = $_POST['term'] ?? $default_term;
 $students = [];
 $selected_student = null;
 
@@ -38,8 +50,10 @@ if ($selected_class) {
 $class_teacher_name = '';
 $principal_name = '';
 if ($selected_class) {
-    $stmt = $pdo->prepare("SELECT DISTINCT class_teachers_name, principals_name FROM student_comments WHERE student_id IN (SELECT id FROM students WHERE class = ?) AND session = ? AND term = ? LIMIT 1");
-    $stmt->execute([$selected_class, $current_session, $current_term]);
+    $stmt = $pdo->prepare("SELECT DISTINCT class_teachers_name, principals_name FROM student_comments 
+                          WHERE student_id IN (SELECT id FROM students WHERE class = ?) 
+                          AND session = ? AND term = ? LIMIT 1");
+    $stmt->execute([$selected_class, $session, $term]);
     $existing_names = $stmt->fetch();
     if ($existing_names) {
         $class_teacher_name = $existing_names['class_teachers_name'] ?? '';
@@ -761,15 +775,12 @@ function getPsychomotorSkills($pdo, $student_id, $session, $term)
             </div>
 
             <ul class="nav-links">
-                <li><a href="index.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="manage-students.php"><i class="fas fa-users"></i> Manage Students</a></li>
-                <li><a href="manage-staff.php"><i class="fas fa-chalkboard-teacher"></i> Manage Staff</a></li>
-                <li><a href="manage-subjects.php"><i class="fas fa-book"></i> Manage Subjects</a></li>
-                <li><a href="manage-exams.php"><i class="fas fa-file-alt"></i> Manage Exams</a></li>
-                <li><a href="view-results.php"><i class="fas fa-chart-bar"></i> View Results</a></li>
-                <li><a href="reports.php"><i class="fas fa-chart-line"></i> Reports</a></li>
-                <li><a href="report_card_dashboard.php"><i class="fas fa-cog"></i> Report Card Dashboard</a></li>
-                <li><a href="enter_comments.php" class="active"><i class="fas fa-comment"></i> Enter Comments</a></li>
+                <li><a href="report_card_dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="report_card_settings.php"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="enter_scores.php"><i class="fas fa-edit"></i> Enter Scores</a></li>
+                <li><a href="enter_comments.php" class="active"><i class="fas fa-comment"></i> Comments</a></li>
+                <li><a href="calculate_positions.php"><i class="fas fa-chart-bar"></i> Calculate Positions</a></li>
+                <li><a href="report_cards.php"><i class="fas fa-file-alt"></i> Generate Reports</a></li>
                 <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
@@ -829,15 +840,15 @@ function getPsychomotorSkills($pdo, $student_id, $session, $term)
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="session">Academic Session:</label>
-                                    <input type="text" name="session" value="<?= $current_session ?>" required>
+                                    <input type="text" name="session" value="<?= htmlspecialchars($session) ?>" required>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="term">Term:</label>
                                     <select name="term" required>
-                                        <option value="First" selected>First Term</option>
-                                        <option value="Second">Second Term</option>
-                                        <option value="Third">Third Term</option>
+                                        <option value="First" <?= $term == 'First' ? 'selected' : '' ?>>First Term</option>
+                                        <option value="Second" <?= $term == 'Second' ? 'selected' : '' ?>>Second Term</option>
+                                        <option value="Third" <?= $term == 'Third' ? 'selected' : '' ?>>Third Term</option>
                                     </select>
                                 </div>
                             </div>
@@ -845,15 +856,16 @@ function getPsychomotorSkills($pdo, $student_id, $session, $term)
                     </div>
 
                     <?php if ($selected_student):
-                        $existing_comments = getStudentComments($pdo, $selected_student_id, $current_session, $current_term);
-                        $existing_affective = getAffectiveTraits($pdo, $selected_student_id, $current_session, $current_term);
-                        $existing_psychomotor = getPsychomotorSkills($pdo, $selected_student_id, $current_session, $current_term);
+                        $existing_comments = getStudentComments($pdo, $selected_student_id, $session, $term);
+                        $existing_affective = getAffectiveTraits($pdo, $selected_student_id, $session, $term);
+                        $existing_psychomotor = getPsychomotorSkills($pdo, $selected_student_id, $session, $term);
                     ?>
                         <!-- Student Information -->
                         <div class="student-info">
                             <h3><?= htmlspecialchars($selected_student['full_name']) ?></h3>
                             <p><strong>Admission Number:</strong> <?= htmlspecialchars($selected_student['admission_number']) ?></p>
                             <p><strong>Class:</strong> <?= htmlspecialchars($selected_class) ?></p>
+                            <p><strong>Session:</strong> <?= htmlspecialchars($session) ?> | <strong>Term:</strong> <?= htmlspecialchars($term) ?></p>
                         </div>
 
                         <!-- Staff Names Section -->
@@ -886,22 +898,22 @@ function getPsychomotorSkills($pdo, $student_id, $session, $term)
                                 <div class="attendance-grid">
                                     <div class="attendance-item">
                                         <label>Days Present:</label>
-                                        <input type="number" name="days_present"
+                                        <input type="number" name="days_present" id="days_present"
                                             value="<?= $existing_comments['days_present'] ?? 0 ?>"
                                             min="0" max="365" required>
                                     </div>
                                     <div class="attendance-item">
                                         <label>Days Absent:</label>
-                                        <input type="number" name="days_absent"
+                                        <input type="number" name="days_absent" id="days_absent"
                                             value="<?= $existing_comments['days_absent'] ?? 0 ?>"
                                             min="0" max="365" required>
                                     </div>
                                 </div>
                                 <?php
-                                $days_present = $existing_comments['days_present'] ?? 0;
-                                $days_absent = $existing_comments['days_absent'] ?? 0;
-                                $total_days = $days_present + $days_absent;
-                                $attendance_rate = $total_days > 0 ? round(($days_present / $total_days) * 100) : 0;
+                                $days_present_val = $existing_comments['days_present'] ?? 0;
+                                $days_absent_val = $existing_comments['days_absent'] ?? 0;
+                                $total_days = $days_present_val + $days_absent_val;
+                                $attendance_rate = $total_days > 0 ? round(($days_present_val / $total_days) * 100) : 0;
                                 ?>
                                 <div class="attendance-summary" id="attendance-summary">
                                     Total Days: <?= $total_days ?> | Attendance Rate: <?= $attendance_rate ?>%
@@ -1003,48 +1015,54 @@ function getPsychomotorSkills($pdo, $student_id, $session, $term)
 
     <script>
         // Automatically calculate attendance summary
-        document.addEventListener('input', function(e) {
-            if (e.target.name === 'days_present' || e.target.name === 'days_absent') {
-                const daysPresent = document.querySelector('input[name="days_present"]');
-                const daysAbsent = document.querySelector('input[name="days_absent"]');
+        function updateAttendanceSummary() {
+            const daysPresent = document.getElementById('days_present');
+            const daysAbsent = document.getElementById('days_absent');
 
-                if (daysPresent && daysAbsent) {
-                    const present = parseInt(daysPresent.value) || 0;
-                    const absent = parseInt(daysAbsent.value) || 0;
-                    const total = present + absent;
-                    const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+            if (daysPresent && daysAbsent) {
+                const present = parseInt(daysPresent.value) || 0;
+                const absent = parseInt(daysAbsent.value) || 0;
+                const total = present + absent;
+                const rate = total > 0 ? Math.round((present / total) * 100) : 0;
 
-                    // Find and update the attendance summary
-                    const summaryDiv = document.getElementById('attendance-summary');
-                    if (summaryDiv) {
-                        summaryDiv.textContent = `Total Days: ${total} | Attendance Rate: ${rate}%`;
+                const summaryDiv = document.getElementById('attendance-summary');
+                if (summaryDiv) {
+                    summaryDiv.textContent = `Total Days: ${total} | Attendance Rate: ${rate}%`;
+                }
+            }
+        }
+
+        // Add event listeners for attendance inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            const daysPresent = document.getElementById('days_present');
+            const daysAbsent = document.getElementById('days_absent');
+
+            if (daysPresent) daysPresent.addEventListener('input', updateAttendanceSummary);
+            if (daysAbsent) daysAbsent.addEventListener('input', updateAttendanceSummary);
+
+            // Mobile menu toggle
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const sidebar = document.getElementById('sidebar');
+
+            mobileMenuBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth <= 768) {
+                    if (!sidebar.contains(event.target) && !mobileMenuBtn.contains(event.target)) {
+                        sidebar.classList.remove('active');
                     }
                 }
-            }
-        });
+            });
 
-        // Mobile menu toggle
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const sidebar = document.getElementById('sidebar');
-
-        mobileMenuBtn.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-        });
-
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function(event) {
-            if (window.innerWidth <= 768) {
-                if (!sidebar.contains(event.target) && !mobileMenuBtn.contains(event.target)) {
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
                     sidebar.classList.remove('active');
                 }
-            }
-        });
-
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 768) {
-                sidebar.classList.remove('active');
-            }
+            });
         });
     </script>
 </body>

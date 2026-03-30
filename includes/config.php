@@ -27,7 +27,7 @@ define('SCHOOL_EMAIL', 'theclimaxbrainsacademy@gmail.com');
 // Contact MyResultChecker support to get your credentials
 
 // Portal API Endpoint (DO NOT CHANGE unless instructed)
-define('PORTAL_API_URL', 'https://impactdigitalacademy.com.ng/result-checker/admin/api/sync.php');
+define('PORTAL_API_URL', 'https://impactdigitalacademy.com.ng/result-checker/api/sync.php');
 
 // Your School's Unique API Key (provided by portal admin)
 // Get this from your school's profile in the MyResultChecker admin panel

@@ -40,24 +40,55 @@ try {
 
     // Get student scores with subject names
     $stmt = $pdo->prepare("
-        SELECT ss.*, sub.subject_name 
-        FROM student_scores ss 
-        JOIN subjects sub ON ss.subject_id = sub.id 
-        WHERE ss.student_id = ? AND ss.session = ? AND ss.term = ?
-        ORDER BY sub.subject_name
-    ");
+    SELECT ss.*, sub.subject_name 
+    FROM student_scores ss 
+    JOIN subjects sub ON ss.subject_id = sub.id 
+    WHERE ss.student_id = ? AND ss.session = ? AND ss.term = ?
+    ORDER BY sub.subject_name
+");
     $stmt->execute([$student_id, $session, $term]);
     $scores = $stmt->fetchAll();
 
-    // Calculate total marks and average
+    // Calculate total marks and average, and calculate missing totals/percentages
     $total_marks = 0;
     $total_percentage = 0;
     $subject_count = count($scores);
 
-    foreach ($scores as $score) {
-        $total_marks += $score['total_score'];
+    foreach ($scores as &$score) {
+        // Parse score_data if it's a string
+        $score_data = is_string($score['score_data']) ? json_decode($score['score_data'], true) : $score['score_data'];
+
+        // Calculate total score if not already set
+        if ($score['total_score'] == 0 && !empty($score_data)) {
+            $score['total_score'] = array_sum($score_data);
+            $score['total_score_original'] = $score['total_score']; // Store original for later use
+        } else {
+            $score['total_score_original'] = $score['total_score'];
+        }
+
+        // Calculate percentage if not already set
+        if ($score['percentage'] == 0 && isset($score['total_score_original'])) {
+            // Get max possible score from settings
+            $max_total = 0;
+            $score_types = json_decode($settings['score_types'], true);
+            if ($score_types) {
+                foreach ($score_types as $type) {
+                    $max_total += $type['max_score'];
+                }
+            } else {
+                $max_total = 100; // Default max
+            }
+
+            $score['percentage'] = ($score['total_score_original'] / $max_total) * 100;
+
+            // Calculate grade based on percentage
+            $score['grade'] = getGrade($score['percentage']);
+        }
+
+        $total_marks += $score['total_score_original'];
         $total_percentage += $score['percentage'];
     }
+    unset($score); // Break reference
 
     $overall_average = $subject_count > 0 ? $total_percentage / $subject_count : 0;
 
@@ -649,7 +680,23 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
                     $counter = 1;
                     foreach ($scores as $score):
                         $score_data = json_decode($score['score_data'], true);
+
+                        // Calculate total if not already calculated
+                        $total = $score['total_score_original'] ?? $score['total_score'];
+                        if ($total == 0 && !empty($score_data)) {
+                            $total = array_sum($score_data);
+                        }
+
+                        // Calculate percentage if not already calculated
                         $percentage = $score['percentage'];
+                        if ($percentage == 0 && $total > 0) {
+                            $max_total = 0;
+                            foreach ($score_types as $type) {
+                                $max_total += $type['max_score'];
+                            }
+                            $percentage = ($total / $max_total) * 100;
+                        }
+
                         $grade = $score['grade'] ?: getGrade($percentage);
                         $grade_class = 'grade-' . strtolower($grade);
                         $remark = getPerformanceRemark($percentage);
@@ -659,7 +706,7 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
                             <?php foreach ($score_types as $type): ?>
                                 <td><?= $score_data[$type['name']] ?? 0 ?></td>
                             <?php endforeach; ?>
-                            <td><strong><?= number_format($score['total_score'], 1) ?></strong></td>
+                            <td><strong><?= number_format($total, 1) ?></strong></td>
                             <td><?= number_format($percentage, 1) ?></td>
                             <td class="<?= $grade_class ?>"><?= $grade ?></td>
                             <td><?= $score['subject_position'] ? ordinal($score['subject_position']) : '-' ?></td>

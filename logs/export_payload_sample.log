@@ -1,0 +1,66 @@
+{
+    "timestamp": "2026-03-30 10:03:43",
+    "school_code": "TCBA001",
+    "students_count": 28,
+    "results_count": 28,
+    "first_student_sample": {
+        "admission_number": "5677\/914228",
+        "full_name": "Abdullahi Ramadan Olasinde",
+        "class": "JSS 1 EMERALD",
+        "gender": null,
+        "date_of_birth": null,
+        "parent_phone": null,
+        "parent_email": null
+    },
+    "first_result_sample": {
+        "admission_number": "5677\/914228",
+        "session_year": "2025\/2026",
+        "term": "Second",
+        "scores": [
+            {
+                "subject_name": "Business Studies",
+                "ca1": 4,
+                "ca2": 7,
+                "exam": 43,
+                "max_ca1": 20,
+                "max_ca2": 20,
+                "max_exam": 60
+            }
+        ],
+        "class_position": null,
+        "class_total_students": 28,
+        "promoted_to": null,
+        "teachers_comment": "He is a good boy",
+        "principals_comment": "Good performance.",
+        "days_present": 120,
+        "days_absent": 34,
+        "affective_traits": {
+            "punctuality": "B",
+            "attendance": "A",
+            "politeness": "A",
+            "honesty": "A",
+            "neatness": "B",
+            "reliability": "B",
+            "relationship": "B",
+            "self_control": "A"
+        },
+        "psychomotor_skills": {
+            "handwriting": "B",
+            "verbal_fluency": "A",
+            "sports": "B",
+            "handling_tools": "B",
+            "drawing_painting": "A",
+            "musical_skills": "A"
+        },
+        "is_published": true
+    },
+    "first_score_sample": {
+        "subject_name": "Business Studies",
+        "ca1": 4,
+        "ca2": 7,
+        "exam": 43,
+        "max_ca1": 20,
+        "max_ca2": 20,
+        "max_exam": 60
+    }
+}
