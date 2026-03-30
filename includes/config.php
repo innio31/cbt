@@ -16,16 +16,40 @@ define('SYSTEM_NAME', 'Offline CBT System');
 
 // Add these school information constants
 define('SCHOOL_MOTTO', 'Raising Champions');
-define('SCHOOL_ADDRESS', 'Ijaba Road, Adebisi, Iyesi Ota, Ogun state');
+define('SCHOOL_ADDRESS', 'Plot 6, Progress Avenue, Wema Bank Estate, Ijaba Road, Adebisi, Iyesi Ota, Ogun state');
 define('SCHOOL_PHONE', '+234 803 123 4567'); // Update with actual phone number
-define('SCHOOL_EMAIL', 'mforvalours@gmail.com');
+define('SCHOOL_EMAIL', 'theclimaxbrainsacademy@gmail.com');
+
+// ============================================
+// MYRESULTCHECKER PORTAL INTEGRATION
+// ============================================
+// These settings are provided by the MyResultChecker portal administrator
+// Contact MyResultChecker support to get your credentials
+
+// Portal API Endpoint (DO NOT CHANGE unless instructed)
+define('PORTAL_API_URL', 'https://impactdigitalacademy.com.ng/result-checker/admin/api/sync.php');
+
+// Your School's Unique API Key (provided by portal admin)
+// Get this from your school's profile in the MyResultChecker admin panel
+define('PORTAL_API_KEY', '8d1910fa39812e0077acfc629741b96b1580836edaf9dacc19fa95b64155c5bf');
+
+// Your School's Unique Code (provided by portal admin)
+// This matches the school_code you created in the portal
+define('SCHOOL_CODE', 'TCBA001');
+
+// Optional: Enable debug mode for portal sync (set to true for testing)
+define('PORTAL_DEBUG_MODE', true);
+
+// Optional: Portal sync timeout in seconds
+define('PORTAL_SYNC_TIMEOUT', 120);
+// ============================================
 
 // System paths
 $base_url = 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/tcba/';
 define('BASE_URL', $base_url);
 define('UPLOAD_PATH', $_SERVER['DOCUMENT_ROOT'] . '/tcba/uploads/');
 
-// Design colors - Climax Brains for Valours Theme
+// Design colors - Climax Brains Theme
 define('COLOR_PRIMARY', '#2c3e50');
 define('COLOR_SECONDARY', '#3498db');
 define('COLOR_ACCENT', '#e74c3c');
@@ -59,6 +83,15 @@ ini_set('display_errors', 1);
 
 // Set timezone
 date_default_timezone_set('Africa/Lagos');
+
+// Helper function to check if portal is configured
+function isPortalConfigured()
+{
+    return defined('PORTAL_API_KEY') &&
+        !empty(PORTAL_API_KEY) &&
+        defined('SCHOOL_CODE') &&
+        !empty(SCHOOL_CODE);
+}
 
 // Add these functions to includes/config.php
 
@@ -102,12 +135,12 @@ function getAssignedSubjects($pdo, $staff_id)
     return [];
 }
 
-// Add these to your existing config.php
-
 // Central Question Bank Configuration
-define('CENTRAL_URL', 'https://your-central-domain.com/api'); // Change to your actual central URL
+define('CENTRAL_URL', 'https://impactdigitalacademy.com.ng/school-central/api'); // Change to your actual central URL
 define('CENTRAL_API_KEY', ''); // Will be set in database/settings
-define('SCHOOL_CODE', ''); // Your school's unique code
+// Note: SCHOOL_CODE is already defined above for portal integration
+// If you need a separate school code for central question bank, use a different constant name
+define('CENTRAL_SCHOOL_CODE', ''); // Separate constant for central question bank
 
 // Sync Settings
 define('AUTO_SYNC_ENABLED', true); // Enable automatic sync via cron
@@ -139,7 +172,7 @@ function ensureCentralSettings()
         $pdo->prepare("
             INSERT INTO central_settings (central_url, api_key, school_code)
             VALUES (?, ?, ?)
-        ")->execute([CENTRAL_URL, CENTRAL_API_KEY, SCHOOL_CODE]);
+        ")->execute([CENTRAL_URL, CENTRAL_API_KEY, CENTRAL_SCHOOL_CODE]);
     }
 }
 

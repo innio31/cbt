@@ -843,7 +843,7 @@ if ($current_settings && !empty($current_settings['score_types'])) {
             </div>
 
             <ul class="nav-links">
-                <li><a href="index.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="report_card_dashboard.php"><i class="fas fa-tachometer-alt"></i> Report Card Dashboard</a></li>
                 <li><a href="enter_scores.php"><i class="fas fa-users"></i> Enter Scores</a></li>
                 <li><a href="enter_comments.php"><i class="fas fa-chalkboard-teacher"></i> Enter Comments</a></li>
                 <li><a href="report_card_settings.php" class="active"><i class="fas fa-cog"></i> Report Card Settings</a></li>

@@ -581,12 +581,7 @@ $students_with_comments = $pdo->query("SELECT COUNT(DISTINCT student_id) as coun
 
             <ul class="nav-links">
                 <li><a href="index.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="manage-students.php"><i class="fas fa-users"></i> Manage Students</a></li>
-                <li><a href="manage-staff.php"><i class="fas fa-chalkboard-teacher"></i> Manage Staff</a></li>
-                <li><a href="manage-subjects.php"><i class="fas fa-book"></i> Manage Subjects</a></li>
-                <li><a href="manage-exams.php"><i class="fas fa-file-alt"></i> Manage Exams</a></li>
-                <li><a href="view-results.php"><i class="fas fa-chart-bar"></i> View Results</a></li>
-                <li><a href="reports.php"><i class="fas fa-chart-line"></i> Reports</a></li>
+                <li><a href="export_to_portal.php"><i class="fas fa-cloud-upload-alt"></i> Export to Portal</a></li>
                 <li><a href="report_card_dashboard.php" class="active"><i class="fas fa-file-contract"></i> Report Cards</a></li>
                 <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
