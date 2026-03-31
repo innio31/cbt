@@ -40,55 +40,24 @@ try {
 
     // Get student scores with subject names
     $stmt = $pdo->prepare("
-    SELECT ss.*, sub.subject_name 
-    FROM student_scores ss 
-    JOIN subjects sub ON ss.subject_id = sub.id 
-    WHERE ss.student_id = ? AND ss.session = ? AND ss.term = ?
-    ORDER BY sub.subject_name
-");
+        SELECT ss.*, sub.subject_name 
+        FROM student_scores ss 
+        JOIN subjects sub ON ss.subject_id = sub.id 
+        WHERE ss.student_id = ? AND ss.session = ? AND ss.term = ?
+        ORDER BY sub.subject_name
+    ");
     $stmt->execute([$student_id, $session, $term]);
     $scores = $stmt->fetchAll();
 
-    // Calculate total marks and average, and calculate missing totals/percentages
+    // Calculate total marks and average
     $total_marks = 0;
     $total_percentage = 0;
     $subject_count = count($scores);
 
-    foreach ($scores as &$score) {
-        // Parse score_data if it's a string
-        $score_data = is_string($score['score_data']) ? json_decode($score['score_data'], true) : $score['score_data'];
-
-        // Calculate total score if not already set
-        if ($score['total_score'] == 0 && !empty($score_data)) {
-            $score['total_score'] = array_sum($score_data);
-            $score['total_score_original'] = $score['total_score']; // Store original for later use
-        } else {
-            $score['total_score_original'] = $score['total_score'];
-        }
-
-        // Calculate percentage if not already set
-        if ($score['percentage'] == 0 && isset($score['total_score_original'])) {
-            // Get max possible score from settings
-            $max_total = 0;
-            $score_types = json_decode($settings['score_types'], true);
-            if ($score_types) {
-                foreach ($score_types as $type) {
-                    $max_total += $type['max_score'];
-                }
-            } else {
-                $max_total = 100; // Default max
-            }
-
-            $score['percentage'] = ($score['total_score_original'] / $max_total) * 100;
-
-            // Calculate grade based on percentage
-            $score['grade'] = getGrade($score['percentage']);
-        }
-
-        $total_marks += $score['total_score_original'];
+    foreach ($scores as $score) {
+        $total_marks += $score['total_score'];
         $total_percentage += $score['percentage'];
     }
-    unset($score); // Break reference
 
     $overall_average = $subject_count > 0 ? $total_percentage / $subject_count : 0;
 
@@ -287,244 +256,159 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
     <head>
         <title>Report Card - <?= htmlspecialchars($student['full_name']) ?></title>
         <style>
+            * {
+                box-sizing: border-box;
+            }
+
             body {
                 font-family: Arial, sans-serif;
                 margin: 0;
                 padding: 0;
-                font-size: 8pt;
+                font-size: 7.2pt;
+                /* Tightened font for one-page fit */
+                line-height: 1.1;
                 background: white;
             }
 
             .container {
                 width: 210mm;
-                min-height: 297mm;
+                height: 297mm;
+                /* Standard A4 */
                 margin: 0 auto;
-                padding: 15px;
-                box-sizing: border-box;
+                padding: 10mm;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                /* Strict one-page restriction */
             }
 
             .header {
                 text-align: center;
-                margin-bottom: 15px;
-                position: relative;
+                margin-bottom: 5px;
             }
 
             .school-name {
-                font-size: 16pt;
+                font-size: 15pt;
                 font-weight: bold;
-                margin: 5px 0;
-                color: #000;
+                margin: 0;
             }
 
             .motto {
-                font-size: 10pt;
-                margin: 3px 0;
-                color: #000;
+                font-size: 9pt;
+                margin: 2px 0;
+                font-style: italic;
             }
 
             .contact-info {
-                font-size: 8pt;
-                margin: 3px 0;
-                color: #000;
+                font-size: 7.5pt;
+                margin: 2px 0;
             }
 
             .divider {
                 border-top: 2px solid #000;
-                margin: 10px 0;
+                margin: 5px 0;
             }
 
             .section-title {
                 text-align: center;
                 font-weight: bold;
-                font-size: 11pt;
-                margin: 10px 0;
-                color: #000;
+                font-size: 10pt;
+                margin: 5px 0;
+                text-transform: uppercase;
             }
 
-            .info-table {
+            table {
                 width: 100%;
                 border-collapse: collapse;
-                margin: 10px 0;
-                font-size: 8pt;
+                margin-bottom: 5px;
+            }
+
+            table,
+            th,
+            td {
                 border: 1px solid #000;
             }
 
-            .info-table td {
-                padding: 4px;
-                border: 1px solid #000;
+            td {
+                padding: 2.5px;
             }
 
-            .info-table .label {
+            .label {
                 font-weight: bold;
                 background: #f0f0f0;
-                width: 25%;
+                width: 18%;
             }
 
+            /* Academic Scores Table */
             .scores-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 10px 0;
                 font-size: 7pt;
-                border: 1px solid #000;
-            }
-
-            .scores-table th,
-            .scores-table td {
-                border: 1px solid #000;
-                padding: 3px;
-                text-align: center;
             }
 
             .scores-table th {
                 background: #e0e0e0;
-                font-weight: bold;
-            }
-
-            .scores-table .subject-col {
-                text-align: left;
-                width: 15%;
-                font-weight: bold;
-            }
-
-            .scores-table .grade-a {
-                color: #006600;
-                font-weight: bold;
-            }
-
-            .scores-table .grade-b {
-                color: #339933;
-                font-weight: bold;
-            }
-
-            .scores-table .grade-c {
-                color: #666600;
-                font-weight: bold;
-            }
-
-            .scores-table .grade-d {
-                color: #996600;
-                font-weight: bold;
-            }
-
-            .scores-table .grade-e {
-                color: #cc6600;
-                font-weight: bold;
-            }
-
-            .scores-table .grade-f {
-                color: #cc0000;
-                font-weight: bold;
-            }
-
-            .traits-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 10px 0;
-                font-size: 7pt;
-                border: 1px solid #000;
-            }
-
-            .traits-table td {
-                border: 1px solid #000;
                 padding: 3px;
-                vertical-align: top;
             }
 
-            .traits-table .section-header {
+            .subject-col {
+                text-align: left;
+                width: 22%;
+                font-weight: bold;
+            }
+
+            /* Layout Fix: Side-by-Side Traits to save vertical space */
+            .traits-row {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 5px;
+            }
+
+            .traits-column {
+                flex: 1;
+            }
+
+            .compact-table {
+                font-size: 6.8pt;
+                margin: 0;
+            }
+
+            .section-header {
                 background: #f0f0f0;
                 font-weight: bold;
                 text-align: center;
             }
 
+            /* Rating Key and Comments */
             .rating-key {
-                margin: 10px 0;
-                font-size: 7pt;
-                border: 1px solid #000;
-                border-collapse: collapse;
-            }
-
-            .rating-key table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-
-            .rating-key td,
-            .rating-key th {
-                border: 1px solid #000;
-                padding: 3px;
-                text-align: center;
-            }
-
-            .rating-key th {
-                background: #e0e0e0;
-                font-weight: bold;
-            }
-
-            .comments-section {
-                margin: 15px 0;
-                font-size: 8pt;
+                font-size: 6.5pt;
+                margin-bottom: 5px;
             }
 
             .comments-section div {
-                margin: 8px 0;
-                padding: 5px;
+                margin: 3px 0;
+                padding: 4px;
                 border: 1px solid #000;
-                min-height: 40px;
+                min-height: 35px;
+                line-height: 1.2;
             }
 
             .footer {
                 text-align: center;
-                margin-top: 20px;
                 font-size: 7pt;
-                color: #000;
-            }
-
-            .no-print {
-                text-align: center;
-                margin: 20px 0;
-            }
-
-            .btn {
-                background: #4a90e2;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                margin: 0 5px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 9pt;
-                text-decoration: none;
-                display: inline-block;
-            }
-
-            .performance-remark {
-                font-weight: bold;
-                color: #006600;
-            }
-
-            .compact-table {
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 7pt;
-                margin: 5px 0;
-            }
-
-            .compact-table td {
-                padding: 2px;
-                border: 1px solid #000;
+                margin-top: auto;
+                padding-top: 5px;
             }
 
             .rating-circle {
                 display: inline-block;
-                width: 20px;
-                height: 20px;
-                line-height: 20px;
+                width: 15px;
+                height: 15px;
+                line-height: 15px;
                 border-radius: 50%;
                 text-align: center;
                 font-weight: bold;
                 color: white;
-                background: #666;
                 font-size: 6pt;
+                margin-left: 2px;
             }
 
             .rating-5 {
@@ -553,36 +437,49 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
                 }
 
                 .container {
-                    padding: 10px;
+                    padding: 5mm;
+                    margin: 0;
+                    height: 100vh;
                 }
+
+                body {
+                    -webkit-print-color-adjust: exact;
+                }
+            }
+
+            .btn {
+                background: #4a90e2;
+                color: white;
+                border: none;
+                padding: 8px 15px;
+                margin: 5px;
+                border-radius: 4px;
+                cursor: pointer;
+                text-decoration: none;
+                display: inline-block;
             }
         </style>
     </head>
 
     <body>
-        <div class="no-print">
+        <div class="no-print" style="text-align:center;">
             <button class="btn" onclick="window.print()">🖨️ Print Report Card</button>
             <a href="?student_id=<?= $student['id'] ?>&session=<?= $settings['session'] ?>&term=<?= $settings['term'] ?>&download=pdf" class="btn">📄 Download PDF</a>
-            <button class="btn" onclick="window.close()">❌ Close</button>
         </div>
 
         <div class="container">
-            <!-- School Header -->
             <div class="header">
-                <div class="school-name">THE CLIMAX BRAINS ACADEMY, OTA</div>
-                <div class="motto"><i>Raising Champions</i></div>
+                <div class="school-name"><?= defined('SCHOOL_NAME') ? htmlspecialchars(SCHOOL_NAME) : 'THE CLIMAX BRAINS ACADEMY, OTA' ?></div>
+                <div class="motto"><i><?= defined('SCHOOL_MOTTO') ? htmlspecialchars(SCHOOL_MOTTO) : 'Raising Champions' ?></i></div>
                 <div class="contact-info">
-                    Address: Ijaba Road, Adebisi, Iyesi Ota, Ogun state | Phone No: [Phone Number] | Email: theclimaxbrainsacademyota@gmail.com
+                    <?= htmlspecialchars(SCHOOL_ADDRESS ?? '') ?> | <?= htmlspecialchars(SCHOOL_PHONE ?? '') ?> | <?= htmlspecialchars(SCHOOL_EMAIL ?? '') ?>
                 </div>
             </div>
 
             <div class="divider"></div>
-
-            <!-- Term Information -->
             <div class="section-title"><?= strtoupper($settings['term']) ?> TERM <?= $settings['session'] ?></div>
 
-            <!-- Student Information -->
-            <table class="info-table">
+            <table>
                 <tr>
                     <td class="label">Session</td>
                     <td><?= $settings['session'] ?></td>
@@ -592,7 +489,7 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
                     <td><?= $age_display ?: 'N/A' ?></td>
                 </tr>
                 <tr>
-                    <td class="label">Name of Student</td>
+                    <td class="label">Student Name</td>
                     <td colspan="3"><strong><?= strtoupper(htmlspecialchars($student['full_name'])) ?></strong></td>
                     <td class="label">Reg. No</td>
                     <td><?= htmlspecialchars($student['admission_number']) ?></td>
@@ -600,79 +497,54 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
                 <tr>
                     <td class="label">Class</td>
                     <td><?= htmlspecialchars($student['class']) ?></td>
-                    <td class="label">Next Term Begins</td>
-                    <td><?= !empty($settings['next_resumption_date']) ? date('d-M-Y', strtotime($settings['next_resumption_date'])) : 'To be announced' ?></td>
+                    <td class="label">Resumption</td>
+                    <td><?= !empty($settings['next_resumption_date']) ? date('d-M-Y', strtotime($settings['next_resumption_date'])) : 'TBA' ?></td>
                     <td class="label">Gender</td>
                     <td><?= $gender_display ?: 'N/A' ?></td>
                 </tr>
             </table>
 
-            <!-- Performance Summary -->
-            <table class="info-table">
+            <table>
                 <tr>
-                    <td class="label">Position in Class</td>
+                    <td class="label">Class Position</td>
                     <td><?= $position ? ordinal($position['class_position']) : 'N/A' ?></td>
-                    <td class="label">No. of Students in Class</td>
+                    <td class="label">Students in Class</td>
                     <td><?= $class_total ?></td>
-                    <td class="label">No. of Days School Opened</td>
+                    <td class="label">Days Opened</td>
                     <td><?= $days_school_opened ?></td>
                 </tr>
                 <tr>
-                    <td class="label">Overall Total Score</td>
+                    <td class="label">Total Score</td>
                     <td><?= number_format($total_marks, 1) ?></td>
-                    <td class="label">Class Average Score</td>
+                    <td class="label">Class Avg</td>
                     <td><?= number_format($highest_average, 1) ?></td>
-                    <td class="label">No. of Days Present</td>
+                    <td class="label">Days Present</td>
                     <td><?= $days_present ?></td>
                 </tr>
                 <tr>
-                    <td class="label">Student's Average Score</td>
+                    <td class="label">Student Avg</td>
                     <td><?= number_format($overall_average, 1) ?></td>
-                    <td class="label">Lowest Average in Class</td>
-                    <td><?= number_format($lowest_average, 1) ?></td>
-                    <td class="label">No. of Days Absent</td>
-                    <td><?= $days_absent ?></td>
-                </tr>
-                <tr>
-                    <td class="label">Highest Average in Class</td>
-                    <td><?= number_format($highest_average, 1) ?></td>
                     <td class="label">Overall Performance</td>
-                    <td colspan="3" class="performance-remark"><?= getPerformanceRemark($overall_average) ?></td>
+                    <td colspan="3" style="font-weight:bold; color:green;"><?= getPerformanceRemark($overall_average) ?></td>
                 </tr>
             </table>
 
-            <div class="divider"></div>
-
-            <!-- Academic Performance Table -->
-            <div class="section-title">SUBJECT</div>
-
-            <?php
-            $score_types = json_decode($settings['score_types'], true);
-            if (!$score_types || empty($score_types)) {
-                $score_types = [
-                    ['name' => 'CA 1', 'max_score' => 10],
-                    ['name' => 'CA 2', 'max_score' => 10],
-                    ['name' => 'CA 3', 'max_score' => 10],
-                    ['name' => 'Exam', 'max_score' => 70]
-                ];
-            }
-            ?>
-
+            <div class="section-title">Academic Performance</div>
             <table class="scores-table">
                 <thead>
                     <tr>
-                        <th rowspan="2" class="subject-col">SUBJECT</th>
-                        <?php foreach ($score_types as $type): ?>
-                            <th rowspan="2"><?= substr($type['name'], 0, 4) ?></th>
+                        <th class="subject-col">SUBJECT</th>
+                        <?php
+                        $score_types = json_decode($settings['score_types'], true) ?: [['name' => 'CA', 'max_score' => 30], ['name' => 'Exam', 'max_score' => 70]];
+                        foreach ($score_types as $type): ?>
+                            <th><?= substr($type['name'], 0, 4) ?></th>
                         <?php endforeach; ?>
-                        <th rowspan="2">Total</th>
-                        <th rowspan="2">%</th>
-                        <th rowspan="2">Grade</th>
-                        <th rowspan="2">Pos.</th>
-                        <th rowspan="2">Class<br>Avg</th>
-                        <th rowspan="2">Highest<br>Score</th>
-                        <th rowspan="2">Lowest<br>Score</th>
-                        <th rowspan="2">Remarks</th>
+                        <th>Total</th>
+                        <th>%</th>
+                        <th>Grade</th>
+                        <th>Pos</th>
+                        <th>Avg</th>
+                        <th>Remark</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -680,53 +552,28 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
                     $counter = 1;
                     foreach ($scores as $score):
                         $score_data = json_decode($score['score_data'], true);
-
-                        // Calculate total if not already calculated
                         $total = $score['total_score_original'] ?? $score['total_score'];
-                        if ($total == 0 && !empty($score_data)) {
-                            $total = array_sum($score_data);
-                        }
-
-                        // Calculate percentage if not already calculated
-                        $percentage = $score['percentage'];
-                        if ($percentage == 0 && $total > 0) {
-                            $max_total = 0;
-                            foreach ($score_types as $type) {
-                                $max_total += $type['max_score'];
-                            }
-                            $percentage = ($total / $max_total) * 100;
-                        }
-
-                        $grade = $score['grade'] ?: getGrade($percentage);
-                        $grade_class = 'grade-' . strtolower($grade);
-                        $remark = getPerformanceRemark($percentage);
+                        $perc = $score['percentage'];
+                        $grade = $score['grade'] ?: getGrade($perc);
                     ?>
                         <tr>
-                            <td class="subject-col"><?= $counter . '. ' . htmlspecialchars($score['subject_name']) ?></td>
+                            <td class="subject-col"><?= $counter++ . '. ' . htmlspecialchars($score['subject_name']) ?></td>
                             <?php foreach ($score_types as $type): ?>
                                 <td><?= $score_data[$type['name']] ?? 0 ?></td>
                             <?php endforeach; ?>
                             <td><strong><?= number_format($total, 1) ?></strong></td>
-                            <td><?= number_format($percentage, 1) ?></td>
-                            <td class="<?= $grade_class ?>"><?= $grade ?></td>
+                            <td><?= number_format($perc, 1) ?></td>
+                            <td><?= $grade ?></td>
                             <td><?= $score['subject_position'] ? ordinal($score['subject_position']) : '-' ?></td>
-                            <td><?= number_format($percentage, 1) ?></td>
-                            <td><?= number_format($percentage, 1) ?></td>
-                            <td><?= number_format($percentage, 1) ?></td>
-                            <td><?= $remark ?></td>
+                            <td><?= number_format($perc, 1) ?></td>
+                            <td><?= getPerformanceRemark($perc) ?></td>
                         </tr>
-                    <?php $counter++;
-                    endforeach; ?>
+                    <?php endforeach; ?>
 
-                    <!-- Add empty rows for consistent formatting -->
                     <?php for ($i = count($scores) + 1; $i <= 15; $i++): ?>
                         <tr>
-                            <td class="subject-col"><?= $i . '. ' ?></td>
-                            <?php for ($j = 0; $j < count($score_types); $j++): ?>
-                                <td></td>
-                            <?php endfor; ?>
-                            <td></td>
-                            <td></td>
+                            <td class="subject-col"><?= $i ?>. </td>
+                            <?php foreach ($score_types as $type): ?><td></td><?php endforeach; ?>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -738,208 +585,76 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
                 </tbody>
             </table>
 
-            <div class="divider"></div>
+            <div class="traits-row">
+                <div class="traits-column">
+                    <div class="section-header">AFFECTIVE TRAITS</div>
+                    <table class="compact-table">
+                        <?php
+                        $affective_traits = [
+                            ['Punctuality', 'punctuality'],
+                            ['Neatness', 'neatness'],
+                            ['Honesty', 'honesty'],
+                            ['Reliability', 'reliability'],
+                            ['Relationship', 'relationship'],
+                            ['Politeness', 'politeness']
+                        ];
+                        foreach ($affective_traits as $item):
+                            $val = $affective[$item[1]] ?? '';
+                            $num = convertGradeToRating($val);
+                        ?>
+                            <tr>
+                                <td><?= $item[0] ?></td>
+                                <td><strong><?= $val ?: '-' ?></strong> <?php if ($num): ?><span class="rating-circle rating-<?= $num ?>"><?= $num ?></span><?php endif; ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </table>
+                </div>
+                <div class="traits-column">
+                    <div class="section-header">PSYCHOMOTOR SKILLS</div>
+                    <table class="compact-table">
+                        <?php
+                        $psychomotor_list = [
+                            ['Handwriting', 'handwriting'],
+                            ['Reading', ''],
+                            ['Fluency', 'verbal_fluency'],
+                            ['Musical', 'musical_skills'],
+                            ['Creative Arts', 'drawing_painting'],
+                            ['Sports', 'sports']
+                        ];
+                        foreach ($psychomotor_list as $item):
+                            $val = $psychomotor[$item[1]] ?? '';
+                            $num = convertGradeToRating($val);
+                        ?>
+                            <tr>
+                                <td><?= $item[0] ?></td>
+                                <td><strong><?= $val ?: '-' ?></strong> <?php if ($num): ?><span class="rating-circle rating-<?= $num ?>"><?= $num ?></span><?php endif; ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </table>
+                </div>
+            </div>
 
-            <!-- Affective Traits and Psychomotor Skills -->
-            <table class="traits-table">
-                <tr>
-                    <td width="50%" class="section-header">AFFECTIVE TRAITS</td>
-                    <td width="50%" class="section-header">PSYCHOMOTOR SKILLS</td>
-                </tr>
-                <tr>
-                    <td>
-                        <table class="compact-table">
-                            <?php
-                            $affective_traits_list = [
-                                ['label' => 'Punctuality', 'key' => 'punctuality'],
-                                ['label' => 'Mental Alertness', 'key' => ''],
-                                ['label' => 'Behavior', 'key' => ''],
-                                ['label' => 'Reliability', 'key' => 'reliability'],
-                                ['label' => 'Attentiveness', 'key' => ''],
-                                ['label' => 'Respect', 'key' => ''],
-                                ['label' => 'Neatness', 'key' => 'neatness'],
-                                ['label' => 'Politeness', 'key' => 'politeness'],
-                                ['label' => 'Honesty', 'key' => 'honesty'],
-                                ['label' => 'Relationship with staff', 'key' => ''],
-                                ['label' => 'Relationship with students', 'key' => 'relationship'],
-                                ['label' => 'Attitude to school', 'key' => ''],
-                                ['label' => 'Spirit of teamwork', 'key' => ''],
-                                ['label' => 'Initiatives', 'key' => ''],
-                                ['label' => 'Organizational ability', 'key' => '']
-                            ];
-
-                            $chunks = array_chunk($affective_traits_list, ceil(count($affective_traits_list) / 3), true);
-                            ?>
-
-                            <?php foreach ($chunks as $chunk): ?>
-                                <tr>
-                                    <?php foreach ($chunk as $item):
-                                        $rating = '';
-                                        if ($item['key'] && $affective && isset($affective[$item['key']])) {
-                                            $rating = $affective[$item['key']];
-                                        }
-                                        $rating_number = convertGradeToRating($rating);
-                                    ?>
-                                        <td style="border:none; padding:1px 3px; width:33%;">
-                                            <?= $item['label'] ?>:
-                                            <?php if ($rating): ?>
-                                                <strong><?= $rating ?></strong>
-                                                <?php if ($rating_number): ?>
-                                                    <span class="rating-circle rating-<?= $rating_number ?>"><?= $rating_number ?></span>
-                                                <?php endif; ?>
-                                            <?php else: ?>
-                                                <strong>-</strong>
-                                            <?php endif; ?>
-                                        </td>
-                                    <?php endforeach; ?>
-                                </tr>
-                            <?php endforeach; ?>
-                        </table>
-                    </td>
-                    <td>
-                        <table class="compact-table">
-                            <?php
-                            $psychomotor_skills_list = [
-                                ['label' => 'Handwriting', 'key' => 'handwriting'],
-                                ['label' => 'Reading', 'key' => ''],
-                                ['label' => 'Verbal fluency/Diction', 'key' => 'verbal_fluency'],
-                                ['label' => 'Musical Skills', 'key' => 'musical_skills'],
-                                ['label' => 'Creative arts', 'key' => 'drawing_painting'],
-                                ['label' => 'Physical education', 'key' => 'sports'],
-                                ['label' => 'General reasoning', 'key' => ''],
-                                ['label' => 'Handling of Tools', 'key' => 'handling_tools']
-                            ];
-
-                            $skill_chunks = array_chunk($psychomotor_skills_list, ceil(count($psychomotor_skills_list) / 2), true);
-                            ?>
-
-                            <?php foreach ($skill_chunks as $chunk): ?>
-                                <tr>
-                                    <?php foreach ($chunk as $item):
-                                        $rating = '';
-                                        if ($item['key'] && $psychomotor && isset($psychomotor[$item['key']])) {
-                                            $rating = $psychomotor[$item['key']];
-                                        }
-                                        $rating_number = convertGradeToRating($rating);
-                                    ?>
-                                        <td style="border:none; padding:1px 3px; width:50%;">
-                                            <?= $item['label'] ?>:
-                                            <?php if ($rating): ?>
-                                                <strong><?= $rating ?></strong>
-                                                <?php if ($rating_number): ?>
-                                                    <span class="rating-circle rating-<?= $rating_number ?>"><?= $rating_number ?></span>
-                                                <?php endif; ?>
-                                            <?php else: ?>
-                                                <strong>-</strong>
-                                            <?php endif; ?>
-                                        </td>
-                                    <?php endforeach; ?>
-                                </tr>
-                            <?php endforeach; ?>
-                        </table>
-                    </td>
+            <table class="rating-key">
+                <tr style="background:#f0f0f0; font-weight:bold;">
+                    <td>5: Excellent</td>
+                    <td>4: Very Good</td>
+                    <td>3: Good</td>
+                    <td>2: Pass</td>
+                    <td>1: Poor</td>
                 </tr>
             </table>
 
-            <!-- Rating Key -->
-            <div class="rating-key">
-                <table>
-                    <tr>
-                        <th>RATING</th>
-                        <th>SCORE RANGE</th>
-                        <th>GRADE</th>
-                        <th>GRADE POINT</th>
-                        <th>MEANING</th>
-                    </tr>
-                    <tr>
-                        <td>5</td>
-                        <td><?= getRatingMeaning('5') ?></td>
-                        <td>A</td>
-                        <td>≥70% ~ 100%</td>
-                        <td>Excellent</td>
-                    </tr>
-                    <tr>
-                        <td>4</td>
-                        <td><?= getRatingMeaning('4') ?></td>
-                        <td>B</td>
-                        <td>≥60% ~ &lt;70%</td>
-                        <td>Very Good</td>
-                    </tr>
-                    <tr>
-                        <td>3</td>
-                        <td><?= getRatingMeaning('3') ?></td>
-                        <td>C</td>
-                        <td>≥50% ~ &lt;60%</td>
-                        <td>Good</td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td><?= getRatingMeaning('2') ?></td>
-                        <td>D</td>
-                        <td>≥40% ~ &lt;50%</td>
-                        <td>Pass</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td><?= getRatingMeaning('1') ?></td>
-                        <td>E</td>
-                        <td>≥30% ~ &lt;40%</td>
-                        <td>Poor</td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td></td>
-                        <td>F</td>
-                        <td>0% ~ &lt;30%</td>
-                        <td>Fail</td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- Comments Section -->
             <div class="comments-section">
-                <div>
-                    <strong>Class Teacher's Comment:</strong><br>
-                    <?= nl2br(htmlspecialchars($comments['teachers_comment'] ?? 'No comment provided.')) ?>
-                    <?php if ($comments && !empty($comments['class_teachers_name'])): ?>
-                        <br><br><strong>Class Teacher:</strong> <?= htmlspecialchars($comments['class_teachers_name']) ?>
-                    <?php endif; ?>
-                </div>
-                <div>
-                    <strong>Head Teacher's Report:</strong><br>
-                    <?= nl2br(htmlspecialchars($comments['principals_comment'] ?? 'No comment provided.')) ?>
-                    <?php if ($comments && !empty($comments['principals_name'])): ?>
-                        <br><br><strong>Principal:</strong> <?= htmlspecialchars($comments['principals_name']) ?>
-                    <?php endif; ?>
-                </div>
-                <div>
-                    <strong>Director's Report:</strong><br>
-                    This is an average academic output. Work harder next term.
-                </div>
+                <div><strong>Teacher:</strong> <?= htmlspecialchars($comments['teachers_comment'] ?? 'No comment.') ?></div>
+                <div><strong>Principal:</strong> <?= htmlspecialchars($comments['principals_comment'] ?? 'No comment.') ?></div>
+                <div style="font-style: italic;"><strong>Director:</strong> This is an average academic output. Work harder next term.</div>
             </div>
 
-            <!-- Footer -->
             <div class="footer">
-                <p><strong>Next Term Resumption Date:</strong> <?= !empty($settings['next_resumption_date']) ? date('F j, Y', strtotime($settings['next_resumption_date'])) : 'To be announced' ?></p>
-                <p><strong>Current Term Dates:</strong>
-                    <?= !empty($settings['current_resumption_date']) ? date('M j', strtotime($settings['current_resumption_date'])) : 'N/A' ?> -
-                    <?= !empty($settings['current_closing_date']) ? date('M j, Y', strtotime($settings['current_closing_date'])) : 'N/A' ?>
-                </p>
-                <p><em>Generated on: <?= date('F j, Y \a\t g:i A') ?></em></p>
+                <strong>Next Term Resumption Date:</strong> <?= !empty($settings['next_resumption_date']) ? date('F j, Y', strtotime($settings['next_resumption_date'])) : 'TBA' ?>
+                <br><i>Generated on: <?= date('F j, Y \a\t g:i A') ?></i>
             </div>
         </div>
-
-        <script>
-            // Auto-print if print parameter is set
-            if (window.location.search.includes('print=true')) {
-                window.print();
-            }
-
-            // Add page break for printing
-            window.onbeforeprint = function() {
-                document.querySelector('.container').style.pageBreakInside = 'avoid';
-            };
-        </script>
     </body>
 
     </html>
