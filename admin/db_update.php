@@ -70,6 +70,16 @@ function addColumnIfNotExists($pdo, $table, $column, $definition, &$sql_statemen
     return false;
 }
 
+// Helper function to modify column if needed (for data type changes)
+function modifyColumnIfExists($pdo, $table, $column, $definition, &$sql_statements)
+{
+    if (tableExists($pdo, $table) && columnExists($pdo, $table, $column)) {
+        $sql_statements[] = "ALTER TABLE `$table` MODIFY COLUMN $column $definition";
+        return true;
+    }
+    return false;
+}
+
 // Helper function to add index if it doesn't exist
 function addIndexIfNotExists($pdo, $table, $index, $columns, &$sql_statements)
 {
@@ -80,11 +90,37 @@ function addIndexIfNotExists($pdo, $table, $index, $columns, &$sql_statements)
         $stmt = $pdo->prepare("SHOW INDEX FROM `$table` WHERE Key_name = ?");
         $stmt->execute([$index]);
         if ($stmt->rowCount() == 0) {
-            $sql_statements[] = "CREATE INDEX `$index` ON `$table` ($columns)";
+            $sql_statements[] = "ALTER TABLE `$table` ADD INDEX `$index` ($columns)";
             return true;
         }
     } catch (PDOException $e) {
         // Table might not exist yet
+    }
+    return false;
+}
+
+// Helper function to add foreign key if it doesn't exist
+function addForeignKeyIfNotExists($pdo, $table, $constraint, $column, $ref_table, $ref_column, &$sql_statements)
+{
+    try {
+        if (!tableExists($pdo, $table) || !tableExists($pdo, $ref_table)) {
+            return false;
+        }
+        // Check if foreign key already exists
+        $stmt = $pdo->prepare("
+            SELECT CONSTRAINT_NAME 
+            FROM information_schema.KEY_COLUMN_USAGE 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = ? 
+            AND CONSTRAINT_NAME = ?
+        ");
+        $stmt->execute([$table, $constraint]);
+        if ($stmt->rowCount() == 0) {
+            $sql_statements[] = "ALTER TABLE `$table` ADD CONSTRAINT `$constraint` FOREIGN KEY (`$column`) REFERENCES `$ref_table`(`$ref_column`) ON DELETE CASCADE";
+            return true;
+        }
+    } catch (PDOException $e) {
+        // Foreign key might already exist or table not ready
     }
     return false;
 }
@@ -94,12 +130,66 @@ $stmt = $pdo->query("SELECT version FROM migrations");
 $applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 // ============================================
-// COMPLETE DATABASE MIGRATION - Version 1.2.0
-// Includes ALL tables and columns from cbt.sql
+// MIGRATION DEFINITIONS
+// Keep all existing migrations and add new ones
 // ============================================
 
 $migrations = [
-    // Version 1.2.0 - Complete database structure with all tables and columns
+    // Version 1.0.0 - Initial structure
+    '1.0.0' => [
+        'description' => 'Initial database structure',
+        'sql' => function ($pdo) {
+            $sql_statements = [];
+            // Basic tables only
+            $sql_statements[] = "CREATE TABLE IF NOT EXISTS schools (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                school_code VARCHAR(20) UNIQUE NOT NULL,
+                school_name VARCHAR(255) NOT NULL,
+                status ENUM('active', 'inactive') DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )";
+            return $sql_statements;
+        }
+    ],
+    // Version 1.1.0 - Added portal tables
+    '1.1.0' => [
+        'description' => 'Added portal admin and PIN management tables',
+        'sql' => function ($pdo) {
+            $sql_statements = [];
+
+            // Portal admins table
+            $sql_statements[] = "CREATE TABLE IF NOT EXISTS portal_admins (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                username VARCHAR(100) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                full_name VARCHAR(255),
+                email VARCHAR(255),
+                role ENUM('super_admin', 'school_manager', 'support') DEFAULT 'support',
+                status ENUM('active', 'inactive') DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )";
+
+            // Result pins table
+            $sql_statements[] = "CREATE TABLE IF NOT EXISTS result_pins (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                school_id INT NOT NULL,
+                pin_code VARCHAR(20) UNIQUE NOT NULL,
+                batch_number VARCHAR(50),
+                student_id INT,
+                max_uses INT DEFAULT 3,
+                used_count INT DEFAULT 0,
+                status ENUM('unused', 'active', 'expired', 'used_up') DEFAULT 'unused',
+                generated_by INT,
+                generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expiry_date DATE,
+                price DECIMAL(10,2),
+                FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
+            )";
+
+            return $sql_statements;
+        }
+    ],
+    // Version 1.2.0 - Complete database structure
     '1.2.0' => [
         'description' => 'Complete database structure - all tables and columns from cbt.sql',
         'sql' => function ($pdo) {
@@ -118,14 +208,6 @@ $migrations = [
                 created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
-            // Add missing columns to activity_logs
-            addColumnIfNotExists($pdo, 'activity_logs', 'user_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'activity_logs', 'user_type', "ENUM('student','admin','staff') NOT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'activity_logs', 'activity', 'TEXT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'activity_logs', 'ip_address', 'VARCHAR(45) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'activity_logs', 'user_agent', 'TEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'activity_logs', 'created_at', 'TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-
             // ============================================
             // TABLE: admin_users
             // ============================================
@@ -138,13 +220,6 @@ $migrations = [
                 status ENUM('active','inactive') DEFAULT 'active',
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-
-            addColumnIfNotExists($pdo, 'admin_users', 'username', 'VARCHAR(50) NOT NULL UNIQUE', $sql_statements);
-            addColumnIfNotExists($pdo, 'admin_users', 'password', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'admin_users', 'full_name', 'VARCHAR(100) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'admin_users', 'role', "ENUM('super_admin','admin','teacher') DEFAULT 'admin'", $sql_statements);
-            addColumnIfNotExists($pdo, 'admin_users', 'status', "ENUM('active','inactive') DEFAULT 'active'", $sql_statements);
-            addColumnIfNotExists($pdo, 'admin_users', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: affective_traits
@@ -163,25 +238,9 @@ $migrations = [
                 relationship ENUM('A','B','C','D','E') DEFAULT NULL,
                 self_control ENUM('A','B','C','D','E') DEFAULT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_student_session_term (student_id, session, term)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-
-            addColumnIfNotExists($pdo, 'affective_traits', 'student_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'session', 'VARCHAR(20) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'term', 'VARCHAR(20) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'punctuality', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'attendance', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'politeness', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'honesty', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'neatness', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'reliability', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'relationship', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'self_control', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'affective_traits', 'updated_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql_statements);
-
-            // Add unique index
-            $sql_statements[] = "ALTER TABLE affective_traits ADD UNIQUE INDEX unique_student_session_term (student_id, session, term)";
 
             // ============================================
             // TABLE: assignments
@@ -200,17 +259,6 @@ $migrations = [
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
-            addColumnIfNotExists($pdo, 'assignments', 'title', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignments', 'subject_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignments', 'class', 'VARCHAR(50) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignments', 'instructions', 'TEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignments', 'file_path', 'VARCHAR(255) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignments', 'deadline', 'DATETIME DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignments', 'max_marks', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignments', 'staff_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignments', 'created_by', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignments', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-
             // ============================================
             // TABLE: assignment_submissions
             // ============================================
@@ -227,16 +275,6 @@ $migrations = [
                 graded_at TIMESTAMP NULL DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
-            addColumnIfNotExists($pdo, 'assignment_submissions', 'student_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignment_submissions', 'assignment_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignment_submissions', 'submitted_text', 'TEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignment_submissions', 'file_path', 'VARCHAR(500) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignment_submissions', 'submitted_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignment_submissions', 'status', "ENUM('submitted','graded') DEFAULT 'submitted'", $sql_statements);
-            addColumnIfNotExists($pdo, 'assignment_submissions', 'grade', 'VARCHAR(10) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignment_submissions', 'teacher_feedback', 'TEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'assignment_submissions', 'graded_at', 'TIMESTAMP NULL DEFAULT NULL', $sql_statements);
-
             // ============================================
             // TABLE: attendance
             // ============================================
@@ -247,11 +285,6 @@ $migrations = [
                 status ENUM('present', 'absent', 'late') DEFAULT 'present',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-
-            addColumnIfNotExists($pdo, 'attendance', 'student_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'attendance', 'date', 'DATE NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'attendance', 'status', "ENUM('present', 'absent', 'late') DEFAULT 'present'", $sql_statements);
-            addColumnIfNotExists($pdo, 'attendance', 'created_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: central_settings
@@ -267,15 +300,6 @@ $migrations = [
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-
-            addColumnIfNotExists($pdo, 'central_settings', 'central_url', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'central_settings', 'api_key', 'VARCHAR(100) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'central_settings', 'school_code', 'VARCHAR(50) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'central_settings', 'auto_sync', 'TINYINT(1) DEFAULT 1', $sql_statements);
-            addColumnIfNotExists($pdo, 'central_settings', 'sync_interval', 'INT DEFAULT 86400', $sql_statements);
-            addColumnIfNotExists($pdo, 'central_settings', 'last_sync', 'TIMESTAMP NULL DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'central_settings', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'central_settings', 'updated_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: exams
@@ -301,24 +325,6 @@ $migrations = [
                 theory_display ENUM('combined','separate') DEFAULT 'separate'
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
-            addColumnIfNotExists($pdo, 'exams', 'exam_name', 'VARCHAR(100) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'class', 'VARCHAR(50) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'subject_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'topics', 'LONGTEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'objective_count', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'subjective_count', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'theory_count', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'duration_minutes', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'objective_duration', 'INT DEFAULT 60', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'theory_duration', 'INT DEFAULT 60', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'subjective_duration', 'INT DEFAULT 60', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'is_active', 'TINYINT(1) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'instructions', 'TEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'created_at', 'DATETIME DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'exam_type', "ENUM('objective','subjective','theory') DEFAULT 'objective'", $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'group_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exams', 'theory_display', "ENUM('combined','separate') DEFAULT 'separate'", $sql_statements);
-
             // ============================================
             // TABLE: exam_assignments
             // ============================================
@@ -334,15 +340,6 @@ $migrations = [
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
-            addColumnIfNotExists($pdo, 'exam_assignments', 'student_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_assignments', 'exam_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_assignments', 'assigned_by', 'INT NOT NULL COMMENT \'Staff ID\'', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_assignments', 'assignment_type', "ENUM('immediate','scheduled') DEFAULT 'immediate'", $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_assignments', 'start_date', 'DATETIME DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_assignments', 'end_date', 'DATETIME DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_assignments', 'status', "ENUM('assigned','in_progress','completed','expired') DEFAULT 'assigned'", $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_assignments', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-
             // ============================================
             // TABLE: exam_questions
             // ============================================
@@ -357,15 +354,6 @@ $migrations = [
                 subject_id INT NOT NULL,
                 topic_id INT NOT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-
-            addColumnIfNotExists($pdo, 'exam_questions', 'question_text', 'TEXT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_questions', 'option_a', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_questions', 'option_b', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_questions', 'option_c', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_questions', 'option_d', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_questions', 'correct_answer', 'CHAR(1) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_questions', 'subject_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_questions', 'topic_id', 'INT NOT NULL', $sql_statements);
 
             // ============================================
             // TABLE: exam_sessions
@@ -387,20 +375,6 @@ $migrations = [
                 grade VARCHAR(10) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
-            addColumnIfNotExists($pdo, 'exam_sessions', 'student_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'exam_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'exam_type', "ENUM('objective','subjective','theory') DEFAULT 'objective'", $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'start_time', 'DATETIME DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'end_time', 'DATETIME DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'status', "ENUM('in_progress','completed') DEFAULT 'in_progress'", $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'objective_answers', 'LONGTEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'score', 'DECIMAL(5,2) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'correct_answers', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'total_questions', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'submitted_at', 'DATETIME DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'percentage', 'DECIMAL(5,2) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_sessions', 'grade', 'VARCHAR(10) DEFAULT NULL', $sql_statements);
-
             // ============================================
             // TABLE: exam_session_questions
             // ============================================
@@ -411,11 +385,6 @@ $migrations = [
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 question_type ENUM('objective','theory') DEFAULT 'objective'
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-
-            addColumnIfNotExists($pdo, 'exam_session_questions', 'session_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_session_questions', 'question_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_session_questions', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'exam_session_questions', 'question_type', "ENUM('objective','theory') DEFAULT 'objective'", $sql_statements);
 
             // ============================================
             // TABLE: library_resources
@@ -433,16 +402,6 @@ $migrations = [
                 uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
-            addColumnIfNotExists($pdo, 'library_resources', 'title', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'library_resources', 'subject', 'VARCHAR(100) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'library_resources', 'class', 'VARCHAR(50) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'library_resources', 'file_type', 'VARCHAR(50) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'library_resources', 'file_path', 'VARCHAR(500) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'library_resources', 'file_size', 'VARCHAR(50) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'library_resources', 'uploaded_by', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'library_resources', 'uploaded_by_type', "VARCHAR(20) DEFAULT 'staff'", $sql_statements);
-            addColumnIfNotExists($pdo, 'library_resources', 'uploaded_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-
             // ============================================
             // TABLE: login_attempts
             // ============================================
@@ -454,12 +413,6 @@ $migrations = [
                 user_agent TEXT DEFAULT NULL,
                 attempt_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-
-            addColumnIfNotExists($pdo, 'login_attempts', 'username', 'VARCHAR(100) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'login_attempts', 'success', 'TINYINT(1) NOT NULL DEFAULT 0', $sql_statements);
-            addColumnIfNotExists($pdo, 'login_attempts', 'ip_address', 'VARCHAR(45) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'login_attempts', 'user_agent', 'TEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'login_attempts', 'attempt_time', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: objective_questions
@@ -483,22 +436,6 @@ $migrations = [
                 gap_number INT DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
-            addColumnIfNotExists($pdo, 'objective_questions', 'question_text', 'MEDIUMTEXT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'option_a', 'MEDIUMTEXT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'option_b', 'MEDIUMTEXT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'option_c', 'MEDIUMTEXT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'option_d', 'MEDIUMTEXT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'correct_answer', 'CHAR(1) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'subject_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'topic_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'difficulty_level', "ENUM('easy','medium','hard') DEFAULT 'medium'", $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'marks', 'INT DEFAULT 1', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'class', 'VARCHAR(50) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'question_image', 'VARCHAR(255) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'passage_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'objective_questions', 'gap_number', 'INT DEFAULT NULL', $sql_statements);
-
             // ============================================
             // TABLE: passages
             // ============================================
@@ -511,13 +448,6 @@ $migrations = [
                 class VARCHAR(50) DEFAULT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-
-            addColumnIfNotExists($pdo, 'passages', 'passage_text', 'TEXT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'passages', 'title', 'VARCHAR(255) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'passages', 'subject_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'passages', 'topic_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'passages', 'class', 'VARCHAR(50) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'passages', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: password_resets
@@ -532,12 +462,19 @@ $migrations = [
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
-            addColumnIfNotExists($pdo, 'password_resets', 'user_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'password_resets', 'user_type', "ENUM('student','staff','admin') NOT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'password_resets', 'token', 'VARCHAR(64) NOT NULL UNIQUE', $sql_statements);
-            addColumnIfNotExists($pdo, 'password_resets', 'expires_at', 'DATETIME NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'password_resets', 'used', 'TINYINT(1) DEFAULT 0', $sql_statements);
-            addColumnIfNotExists($pdo, 'password_resets', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
+            // ============================================
+            // TABLE: portal_activity_logs
+            // ============================================
+            $sql_statements[] = "CREATE TABLE IF NOT EXISTS portal_activity_logs (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                user_id INT NOT NULL,
+                user_type ENUM('admin', 'staff') DEFAULT 'admin',
+                activity VARCHAR(255) NOT NULL,
+                details TEXT,
+                ip_address VARCHAR(45),
+                user_agent TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )";
 
             // ============================================
             // TABLE: psychomotor_skills
@@ -554,20 +491,9 @@ $migrations = [
                 drawing_painting ENUM('A','B','C','D','E') DEFAULT NULL,
                 musical_skills ENUM('A','B','C','D','E') DEFAULT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_student_session_term (student_id, session, term)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
-
-            addColumnIfNotExists($pdo, 'psychomotor_skills', 'student_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'psychomotor_skills', 'session', 'VARCHAR(20) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'psychomotor_skills', 'term', "ENUM('First','Second','Third') NOT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'psychomotor_skills', 'handwriting', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'psychomotor_skills', 'verbal_fluency', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'psychomotor_skills', 'sports', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'psychomotor_skills', 'handling_tools', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'psychomotor_skills', 'drawing_painting', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'psychomotor_skills', 'musical_skills', "ENUM('A','B','C','D','E') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'psychomotor_skills', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'psychomotor_skills', 'updated_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: report_card_settings
@@ -591,27 +517,9 @@ $migrations = [
                 show_lowest_highest_avg TINYINT(1) DEFAULT 1,
                 show_lowest_highest_class TINYINT(1) DEFAULT 1,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_session_term_class (session, term, class)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-
-            addColumnIfNotExists($pdo, 'report_card_settings', 'session', 'VARCHAR(20) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'term', "ENUM('First','Second','Third') NOT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'template', "VARCHAR(50) DEFAULT 'default'", $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'class', 'VARCHAR(50) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'max_score', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'score_types', 'JSON NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'grading_system', "VARCHAR(20) DEFAULT 'simple'", $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'next_resumption_date', 'DATE DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'current_resumption_date', 'DATE DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'current_closing_date', 'DATE DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'days_school_opened', 'INT DEFAULT 90', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'show_class_position', 'TINYINT(1) DEFAULT 1', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'show_subject_position', 'TINYINT(1) DEFAULT 1', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'show_promoted_to', 'TINYINT(1) DEFAULT 1', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'show_lowest_highest_avg', 'TINYINT(1) DEFAULT 1', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'show_lowest_highest_class', 'TINYINT(1) DEFAULT 1', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'report_card_settings', 'updated_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: results
@@ -628,20 +536,27 @@ $migrations = [
                 time_taken INT DEFAULT NULL,
                 submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 correct_count INT DEFAULT 0,
-                total_questions INT DEFAULT 0
+                total_questions INT DEFAULT 0,
+                KEY idx_result_student (student_id),
+                KEY idx_result_exam (exam_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
-            addColumnIfNotExists($pdo, 'results', 'student_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'results', 'exam_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'results', 'objective_score', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'results', 'theory_score', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'results', 'total_score', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'results', 'percentage', 'DECIMAL(5,2) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'results', 'grade', 'VARCHAR(5) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'results', 'time_taken', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'results', 'submitted_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'results', 'correct_count', 'INT DEFAULT 0', $sql_statements);
-            addColumnIfNotExists($pdo, 'results', 'total_questions', 'INT DEFAULT 0', $sql_statements);
+            // ============================================
+            // TABLE: school_classes
+            // ============================================
+            $sql_statements[] = "CREATE TABLE IF NOT EXISTS school_classes (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                school_id INT NOT NULL,
+                class_name VARCHAR(100) NOT NULL,
+                class_code VARCHAR(20),
+                class_category ENUM('Primary', 'Junior Secondary', 'Senior Secondary', 'Other') DEFAULT 'Other',
+                sort_order INT DEFAULT 0,
+                status ENUM('active', 'inactive') DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_school_class (school_id, class_name)
+            )";
 
             // ============================================
             // TABLE: staff
@@ -658,15 +573,6 @@ $migrations = [
                 email VARCHAR(255) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
-            addColumnIfNotExists($pdo, 'staff', 'staff_id', 'VARCHAR(50) NOT NULL UNIQUE', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff', 'password', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff', 'full_name', 'VARCHAR(100) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff', 'role', "ENUM('staff','admin') DEFAULT 'staff'", $sql_statements);
-            addColumnIfNotExists($pdo, 'staff', 'is_active', 'TINYINT(1) DEFAULT 1', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff', 'profile_picture', 'VARCHAR(255) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff', 'email', 'VARCHAR(255) DEFAULT NULL', $sql_statements);
-
             // ============================================
             // TABLE: staff_classes
             // ============================================
@@ -676,10 +582,6 @@ $migrations = [
                 class VARCHAR(50) NOT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
-
-            addColumnIfNotExists($pdo, 'staff_classes', 'staff_id', 'VARCHAR(50) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff_classes', 'class', 'VARCHAR(50) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff_classes', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: staff_subjects
@@ -693,12 +595,6 @@ $migrations = [
                 last_sync TIMESTAMP NULL DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
-            addColumnIfNotExists($pdo, 'staff_subjects', 'staff_id', 'VARCHAR(50) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff_subjects', 'subject_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff_subjects', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff_subjects', 'updated_at', 'TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'staff_subjects', 'last_sync', 'TIMESTAMP NULL DEFAULT NULL', $sql_statements);
-
             // ============================================
             // TABLE: students
             // ============================================
@@ -708,22 +604,21 @@ $migrations = [
                 password VARCHAR(255) NOT NULL,
                 class VARCHAR(50) NOT NULL,
                 class_id INT DEFAULT NULL,
-                status ENUM('active','inactive') DEFAULT 'active',
+                status ENUM('active','inactive','archived') NOT NULL DEFAULT 'active',
+                archive_reason VARCHAR(100) DEFAULT NULL,
+                archived_at DATETIME DEFAULT NULL,
                 full_name VARCHAR(100) NOT NULL,
                 dob DATE DEFAULT NULL,
                 gender ENUM('M','F','Other') DEFAULT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                school_id INT,
+                last_sync_at TIMESTAMP,
+                parent_phone VARCHAR(50),
+                parent_email VARCHAR(255),
+                KEY idx_student_class (class),
+                KEY idx_student_status (status),
+                FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE SET NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
-
-            addColumnIfNotExists($pdo, 'students', 'admission_number', 'VARCHAR(50) NOT NULL UNIQUE', $sql_statements);
-            addColumnIfNotExists($pdo, 'students', 'password', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'students', 'class', 'VARCHAR(50) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'students', 'class_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'students', 'status', "ENUM('active','inactive') DEFAULT 'active'", $sql_statements);
-            addColumnIfNotExists($pdo, 'students', 'full_name', 'VARCHAR(100) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'students', 'dob', 'DATE DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'students', 'gender', "ENUM('M','F','Other') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'students', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: student_comments
@@ -740,20 +635,9 @@ $migrations = [
                 days_present INT DEFAULT 0,
                 days_absent INT DEFAULT 0,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_student_session_term (student_id, session, term)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
-
-            addColumnIfNotExists($pdo, 'student_comments', 'student_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_comments', 'session', 'VARCHAR(20) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_comments', 'term', "ENUM('First','Second','Third') NOT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'student_comments', 'teachers_comment', 'TEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_comments', 'principals_comment', 'TEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_comments', 'class_teachers_name', 'VARCHAR(255) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_comments', 'principals_name', 'VARCHAR(255) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_comments', 'days_present', 'INT DEFAULT 0', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_comments', 'days_absent', 'INT DEFAULT 0', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_comments', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_comments', 'updated_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: student_positions
@@ -768,18 +652,9 @@ $migrations = [
                 average DECIMAL(5,2) DEFAULT 0.00,
                 promoted_to VARCHAR(50) DEFAULT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_student_session_term (student_id, session, term)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
-
-            addColumnIfNotExists($pdo, 'student_positions', 'student_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_positions', 'session', 'VARCHAR(20) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_positions', 'term', "ENUM('First','Second','Third') NOT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'student_positions', 'class_position', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_positions', 'total_marks', 'DECIMAL(8,2) DEFAULT 0.00', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_positions', 'average', 'DECIMAL(5,2) DEFAULT 0.00', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_positions', 'promoted_to', 'VARCHAR(50) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_positions', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_positions', 'updated_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: student_scores
@@ -798,17 +673,6 @@ $migrations = [
                 subject_position INT DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
-            addColumnIfNotExists($pdo, 'student_scores', 'student_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_scores', 'subject_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_scores', 'subject_name', 'VARCHAR(255) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_scores', 'session', 'VARCHAR(20) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_scores', 'term', "ENUM('First','Second','Third') NOT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'student_scores', 'score_data', 'JSON NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_scores', 'total_score', 'DECIMAL(8,2) DEFAULT 0.00', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_scores', 'percentage', 'DECIMAL(5,2) DEFAULT 0.00', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_scores', 'grade', 'VARCHAR(5) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'student_scores', 'subject_position', 'INT DEFAULT NULL', $sql_statements);
-
             // ============================================
             // TABLE: subjective_questions
             // ============================================
@@ -824,15 +688,6 @@ $migrations = [
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
-            addColumnIfNotExists($pdo, 'subjective_questions', 'question_text', 'TEXT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subjective_questions', 'correct_answer', 'VARCHAR(500) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subjective_questions', 'difficulty_level', "ENUM('easy','medium','hard') DEFAULT 'medium'", $sql_statements);
-            addColumnIfNotExists($pdo, 'subjective_questions', 'marks', 'INT DEFAULT 1', $sql_statements);
-            addColumnIfNotExists($pdo, 'subjective_questions', 'subject_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subjective_questions', 'topic_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subjective_questions', 'class', 'VARCHAR(50) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subjective_questions', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-
             // ============================================
             // TABLE: subjects
             // ============================================
@@ -845,12 +700,6 @@ $migrations = [
                 last_sync TIMESTAMP NULL DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
-            addColumnIfNotExists($pdo, 'subjects', 'subject_name', 'VARCHAR(100) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subjects', 'description', 'MEDIUMTEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subjects', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'subjects', 'updated_at', 'TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', $sql_statements);
-            addColumnIfNotExists($pdo, 'subjects', 'last_sync', 'TIMESTAMP NULL DEFAULT NULL', $sql_statements);
-
             // ============================================
             // TABLE: subject_classes
             // ============================================
@@ -858,12 +707,10 @@ $migrations = [
                 id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 subject_id INT NOT NULL,
                 class VARCHAR(50) NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_subject_class (subject_id, class)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-
-            addColumnIfNotExists($pdo, 'subject_classes', 'subject_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subject_classes', 'class', 'VARCHAR(50) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subject_classes', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
 
             // ============================================
             // TABLE: subject_groups
@@ -877,11 +724,17 @@ $migrations = [
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 
-            addColumnIfNotExists($pdo, 'subject_groups', 'group_name', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subject_groups', 'description', 'TEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subject_groups', 'total_duration_minutes', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'subject_groups', 'is_active', 'TINYINT(1) DEFAULT 1', $sql_statements);
-            addColumnIfNotExists($pdo, 'subject_groups', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
+            // ============================================
+            // TABLE: system_settings
+            // ============================================
+            $sql_statements[] = "CREATE TABLE IF NOT EXISTS system_settings (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                setting_key VARCHAR(100) NOT NULL UNIQUE,
+                setting_value TEXT,
+                updated_by INT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )";
 
             // ============================================
             // TABLE: theory_questions
@@ -897,14 +750,6 @@ $migrations = [
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
-            addColumnIfNotExists($pdo, 'theory_questions', 'question_file', 'VARCHAR(255) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'theory_questions', 'question_text', 'TEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'theory_questions', 'subject_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'theory_questions', 'topic_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'theory_questions', 'class', 'VARCHAR(50) DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'theory_questions', 'marks', 'INT DEFAULT 5', $sql_statements);
-            addColumnIfNotExists($pdo, 'theory_questions', 'created_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
-
             // ============================================
             // TABLE: theory_sessions
             // ============================================
@@ -918,13 +763,6 @@ $migrations = [
                 submitted_answers LONGTEXT DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci";
 
-            addColumnIfNotExists($pdo, 'theory_sessions', 'student_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'theory_sessions', 'exam_id', 'INT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'theory_sessions', 'start_time', 'DATETIME DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'theory_sessions', 'end_time', 'DATETIME DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'theory_sessions', 'status', "ENUM('in_progress','completed') DEFAULT NULL", $sql_statements);
-            addColumnIfNotExists($pdo, 'theory_sessions', 'submitted_answers', 'LONGTEXT DEFAULT NULL', $sql_statements);
-
             // ============================================
             // TABLE: topics
             // ============================================
@@ -933,29 +771,122 @@ $migrations = [
                 topic_name VARCHAR(255) NOT NULL,
                 subject_id INT NOT NULL,
                 description TEXT DEFAULT NULL,
-                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (subject_id) REFERENCES subjects(id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
-            addColumnIfNotExists($pdo, 'topics', 'topic_name', 'VARCHAR(255) NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'topics', 'subject_id', 'INT NOT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'topics', 'description', 'TEXT DEFAULT NULL', $sql_statements);
-            addColumnIfNotExists($pdo, 'topics', 'created_at', 'TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP', $sql_statements);
+            return $sql_statements;
+        }
+    ],
+    // Version 1.2.1 - Missing tables, columns, and indexes from cbt.sql
+    '1.2.1' => [
+        'description' => 'Added missing tables (db_updates, student_subject_positions), missing columns in students table, and missing indexes from cbt.sql',
+        'sql' => function ($pdo) {
+            $sql_statements = [];
 
             // ============================================
-            // ADD INDEXES
+            // MISSING TABLE: db_updates
             // ============================================
-            addIndexIfNotExists($pdo, 'students', 'idx_student_class', 'class', $sql_statements);
-            addIndexIfNotExists($pdo, 'students', 'idx_student_status', 'status', $sql_statements);
-            addIndexIfNotExists($pdo, 'exams', 'idx_exam_class', 'class', $sql_statements);
-            addIndexIfNotExists($pdo, 'exams', 'idx_exam_active', 'is_active', $sql_statements);
-            addIndexIfNotExists($pdo, 'results', 'idx_result_student', 'student_id', $sql_statements);
-            addIndexIfNotExists($pdo, 'results', 'idx_result_exam', 'exam_id', $sql_statements);
-            addIndexIfNotExists($pdo, 'exam_sessions', 'idx_session_student', 'student_id', $sql_statements);
-            addIndexIfNotExists($pdo, 'exam_sessions', 'idx_session_exam', 'exam_id', $sql_statements);
-            addIndexIfNotExists($pdo, 'attendance', 'idx_attendance_student_date', 'student_id, date', $sql_statements);
+            $sql_statements[] = "CREATE TABLE IF NOT EXISTS db_updates (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                update_version VARCHAR(50) NOT NULL,
+                update_name VARCHAR(100) NOT NULL,
+                applied_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_update (update_version)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+
+            // ============================================
+            // MISSING TABLE: student_subject_positions
+            // ============================================
+            $sql_statements[] = "CREATE TABLE IF NOT EXISTS student_subject_positions (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                student_id INT NOT NULL,
+                subject_id INT NOT NULL,
+                session VARCHAR(20) NOT NULL,
+                term VARCHAR(10) NOT NULL,
+                subject_position INT DEFAULT NULL,
+                created_at DATETIME DEFAULT NULL,
+                updated_at DATETIME DEFAULT NULL,
+                KEY student_id (student_id),
+                KEY subject_id (subject_id),
+                KEY session (session),
+                KEY term (term)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+
+            // ============================================
+            // MISSING COLUMNS IN students TABLE
+            // ============================================
+
+            // Add missing columns to students table
+            addColumnIfNotExists($pdo, 'students', 'address', 'TEXT DEFAULT NULL', $sql_statements);
+            addColumnIfNotExists($pdo, 'students', 'guardian_name', 'VARCHAR(255) DEFAULT NULL', $sql_statements);
+            addColumnIfNotExists($pdo, 'students', 'guardian_phone', 'VARCHAR(20) DEFAULT NULL', $sql_statements);
+            addColumnIfNotExists($pdo, 'students', 'date_of_admission', 'DATE DEFAULT NULL', $sql_statements);
+            addColumnIfNotExists($pdo, 'students', 'profile_picture', 'VARCHAR(255) DEFAULT NULL', $sql_statements);
+
+            // Modify existing columns to match cbt.sql data types
+            modifyColumnIfExists($pdo, 'students', 'parent_phone', 'VARCHAR(20) DEFAULT NULL', $sql_statements);
+            modifyColumnIfExists($pdo, 'students', 'parent_email', 'VARCHAR(100) DEFAULT NULL', $sql_statements);
+
+            // Update gender ENUM to match cbt.sql (Male,Female,Other vs M,F,Other)
+            // First check if gender column exists and its current definition
+            if (columnExists($pdo, 'students', 'gender')) {
+                // Get current column definition
+                $stmt = $pdo->prepare("SHOW COLUMNS FROM students WHERE Field = 'gender'");
+                $stmt->execute();
+                $colInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($colInfo && strpos($colInfo['Type'], 'Male') === false && strpos($colInfo['Type'], 'M') !== false) {
+                    $sql_statements[] = "ALTER TABLE `students` MODIFY COLUMN `gender` ENUM('Male','Female','Other') DEFAULT NULL";
+                }
+            }
+
+            // ============================================
+            // MISSING INDEXES
+            // ============================================
+
+            // Add fk_students_class_id index to students table
+            addIndexIfNotExists($pdo, 'students', 'fk_students_class_id', 'class_id', $sql_statements);
+
+            // Add index for login_attempts
             addIndexIfNotExists($pdo, 'login_attempts', 'idx_username_time', 'username, attempt_time', $sql_statements);
+
+            // Add index for password_resets
             addIndexIfNotExists($pdo, 'password_resets', 'idx_token', 'token', $sql_statements);
             addIndexIfNotExists($pdo, 'password_resets', 'idx_expires', 'expires_at', $sql_statements);
+
+            // Add index for exam_assignments
+            addIndexIfNotExists($pdo, 'exam_assignments', 'status', 'status', $sql_statements);
+            addIndexIfNotExists($pdo, 'exam_assignments', 'assignment_type', 'assignment_type', $sql_statements);
+
+            // Add index for exams table
+            addIndexIfNotExists($pdo, 'exams', 'fk_exams_group_id', 'group_id', $sql_statements);
+
+            // Add index for library_resources
+            addIndexIfNotExists($pdo, 'library_resources', 'uploaded_by', 'uploaded_by', $sql_statements);
+
+            // Add index for theory_questions
+            addIndexIfNotExists($pdo, 'theory_questions', 'subject_id', 'subject_id', $sql_statements);
+            addIndexIfNotExists($pdo, 'theory_questions', 'topic_id', 'topic_id', $sql_statements);
+
+            // Add index for topics
+            addIndexIfNotExists($pdo, 'topics', 'subject_id', 'subject_id', $sql_statements);
+
+            // ============================================
+            // FOREIGN KEY CONSTRAINTS
+            // ============================================
+
+            // Add foreign key for exam_assignments (if tables exist and constraint doesn't exist)
+            if (tableExists($pdo, 'exam_assignments') && tableExists($pdo, 'students')) {
+                addForeignKeyIfNotExists($pdo, 'exam_assignments', 'exam_assignments_ibfk_1', 'student_id', 'students', 'id', $sql_statements);
+            }
+            if (tableExists($pdo, 'exam_assignments') && tableExists($pdo, 'exams')) {
+                addForeignKeyIfNotExists($pdo, 'exam_assignments', 'exam_assignments_ibfk_2', 'exam_id', 'exams', 'id', $sql_statements);
+            }
+
+            // Add foreign key for subject_classes
+            if (tableExists($pdo, 'subject_classes') && tableExists($pdo, 'subjects')) {
+                addForeignKeyIfNotExists($pdo, 'subject_classes', 'subject_classes_ibfk_1', 'subject_id', 'subjects', 'id', $sql_statements);
+            }
 
             return $sql_statements;
         }
@@ -963,12 +894,12 @@ $migrations = [
 ];
 
 // Get current system version
-$current_version = defined('SYSTEM_VERSION') ? SYSTEM_VERSION : '1.2.0';
+$current_version = '1.2.1';
 
-// Find pending migrations
+// Find pending migrations - ONLY those not already applied
 $pending = [];
 foreach ($migrations as $version => $migration) {
-    if (!in_array($version, $applied) && version_compare($version, $current_version, '<=')) {
+    if (!in_array($version, $applied)) {
         $pending[$version] = $migration;
     }
 }
@@ -998,7 +929,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
                 $transactionStarted = true;
 
                 $executed = 0;
-                $errors = [];
 
                 foreach ($sql_statements as $statement) {
                     if (!empty($statement)) {
@@ -1018,7 +948,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
                                 $executed++;
                                 continue;
                             }
-                            $errors[] = $errorMsg;
                             throw $e;
                         }
                     }
@@ -1039,7 +968,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
                 $applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 $pending = [];
                 foreach ($migrations as $v => $m) {
-                    if (!in_array($v, $applied) && version_compare($v, $current_version, '<=')) {
+                    if (!in_array($v, $applied)) {
                         $pending[$v] = $m;
                     }
                 }
@@ -1049,7 +978,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
                 try {
                     $pdo->rollBack();
                 } catch (Exception $rollbackError) {
-                    // Rollback failed, but we already have an error
+                    // Rollback failed
                 }
             }
             $message = "Error: " . $e->getMessage();
@@ -1082,7 +1011,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])
             $transactionStarted = true;
 
             $executed = 0;
-            $errors = [];
 
             foreach ($sql_statements as $statement) {
                 if (!empty($statement)) {
@@ -1101,7 +1029,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])
                             $executed++;
                             continue;
                         }
-                        $errors[] = $errorMsg;
                         throw $e;
                     }
                 }
@@ -1136,7 +1063,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])
         $applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
         $pending = [];
         foreach ($migrations as $v => $m) {
-            if (!in_array($v, $applied) && version_compare($v, $current_version, '<=')) {
+            if (!in_array($v, $applied)) {
                 $pending[$v] = $m;
             }
         }
@@ -1146,7 +1073,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -1489,7 +1415,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])
                     <div class="stat-label">Pending Migrations</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">1.2.0</div>
+                    <div class="stat-number">1.2.1</div>
                     <div class="stat-label">Latest Version</div>
                 </div>
             </div>

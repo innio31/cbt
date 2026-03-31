@@ -59,6 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+/**
+ * NEW FUNCTION: Export raw score data without transformation
+ * This preserves the exact structure from the database
+ */
 function exportClassData($session, $term, $class)
 {
     global $pdo;
@@ -84,7 +88,7 @@ function exportClassData($session, $term, $class)
     $errors = [];
 
     foreach ($students as $student) {
-        // Get scores for this student
+        // Get scores for this student - PRESERVE ORIGINAL STRUCTURE
         $stmt = $pdo->prepare("
             SELECT ss.*, sub.subject_name, sub.id as subject_id 
             FROM student_scores ss
@@ -102,159 +106,25 @@ function exportClassData($session, $term, $class)
             continue;
         }
 
-        // Format scores - Dynamically extract ALL score fields from score_data
+        // ============ KEY CHANGE: Preserve original score_data exactly ============
         $formatted_scores = [];
         foreach ($scores as $score) {
-            $score_data = json_decode($score['score_data'], true);
+            // Decode the original score_data
+            $original_score_data = json_decode($score['score_data'], true);
 
-            // Debug: Log what we're getting
-            error_log("Score data for {$score['subject_name']}: " . json_encode($score_data));
-
-            // Initialize variables
-            $ca1 = null;
-            $ca2 = null;
-            $exam = null;
-            $max_ca1 = 20;
-            $max_ca2 = 20;
-            $max_exam = 60;
-
-            if (is_array($score_data)) {
-                // Get all score values (exclude any non-numeric fields)
-                $score_values = [];
-                foreach ($score_data as $key => $value) {
-                    if (is_numeric($value) || (is_string($value) && is_numeric($value))) {
-                        $score_values[$key] = floatval($value);
-                    }
-                }
-
-                // Determine which values to use based on number of score components
-                $score_count = count($score_values);
-
-                if ($score_count == 1) {
-                    // Only one score - treat as exam
-                    $exam = reset($score_values);
-                } elseif ($score_count == 2) {
-                    // Two scores - likely CA and Exam
-                    $keys = array_keys($score_values);
-                    // Try to identify which is exam (larger max or specific keywords)
-                    $exam_keywords = ['exam', 'Exam', 'examination', 'final', 'theory', 'objective'];
-                    $found_exam = false;
-                    foreach ($exam_keywords as $keyword) {
-                        foreach ($keys as $key) {
-                            if (stripos($key, $keyword) !== false) {
-                                $exam = $score_values[$key];
-                                $found_exam = true;
-                                break 2;
-                            }
-                        }
-                    }
-                    if (!$found_exam) {
-                        // Assume the larger value is exam
-                        $values = array_values($score_values);
-                        if ($values[0] > $values[1]) {
-                            $exam = $values[0];
-                            $ca1 = $values[1];
-                        } else {
-                            $exam = $values[1];
-                            $ca1 = $values[0];
-                        }
-                    } else {
-                        // Get the remaining as CA
-                        foreach ($score_values as $key => $value) {
-                            if ($value != $exam) {
-                                $ca1 = $value;
-                                break;
-                            }
-                        }
-                    }
-                } elseif ($score_count >= 3) {
-                    // Three or more scores - typical: Test 1, Test 2, Exam, etc.
-                    $keys = array_keys($score_values);
-                    $values = array_values($score_values);
-
-                    // Try to identify exam by keyword
-                    $exam_keywords = ['exam', 'Exam', 'examination', 'final', 'theory', 'objective'];
-                    $exam_index = -1;
-                    foreach ($exam_keywords as $keyword) {
-                        foreach ($keys as $idx => $key) {
-                            if (stripos($key, $keyword) !== false) {
-                                $exam_index = $idx;
-                                $exam = $values[$idx];
-                                break 2;
-                            }
-                        }
-                    }
-
-                    // If exam not found by keyword, assume last or largest is exam
-                    if ($exam_index == -1) {
-                        // Check if last score is largest
-                        $last_value = end($values);
-                        $max_value = max($values);
-                        if ($last_value == $max_value || $max_value > array_sum($values) / 2) {
-                            $exam = $max_value;
-                            $exam_index = array_search($max_value, $values);
-                        } else {
-                            $exam = end($values);
-                            $exam_index = count($values) - 1;
-                        }
-                    }
-
-                    // Distribute remaining scores as CAs
-                    $ca_values = [];
-                    foreach ($values as $idx => $value) {
-                        if ($idx != $exam_index) {
-                            $ca_values[] = $value;
-                        }
-                    }
-
-                    // Sort CA values (assuming first CA is usually smaller)
-                    sort($ca_values);
-
-                    if (count($ca_values) >= 1) {
-                        $ca1 = $ca_values[0];
-                    }
-                    if (count($ca_values) >= 2) {
-                        $ca2 = $ca_values[1];
-                    }
-                    if (count($ca_values) >= 3) {
-                        // If there are more than 2 CAs, combine them or use the average
-                        $ca2 = array_sum($ca_values) / count($ca_values);
-                    }
-                }
-
-                // Try to get max values from score_data if specified
-                foreach ($score_data as $key => $value) {
-                    $key_lower = strtolower($key);
-                    if (strpos($key_lower, 'max') !== false || strpos($key_lower, 'total') !== false || strpos($key_lower, 'out of') !== false) {
-                        if (strpos($key_lower, 'ca1') !== false || strpos($key_lower, 'test1') !== false || strpos($key_lower, 'first') !== false) {
-                            $max_ca1 = floatval($value);
-                        } elseif (strpos($key_lower, 'ca2') !== false || strpos($key_lower, 'test2') !== false || strpos($key_lower, 'second') !== false) {
-                            $max_ca2 = floatval($value);
-                        } elseif (strpos($key_lower, 'exam') !== false || strpos($key_lower, 'final') !== false) {
-                            $max_exam = floatval($value);
-                        }
-                    }
-                }
-
-                // Ensure we have values (use defaults if still null)
-                if ($ca1 === null) $ca1 = 0;
-                if ($ca2 === null) $ca2 = 0;
-                if ($exam === null) $exam = 0;
-
-                // Convert to numbers
-                $ca1 = floatval($ca1);
-                $ca2 = floatval($ca2);
-                $exam = floatval($exam);
+            // If decoding failed or it's not an array, use empty array
+            if (!is_array($original_score_data)) {
+                $original_score_data = [];
             }
 
+            // Add metadata to help portal understand the structure
             $formatted_scores[] = [
                 'subject_name' => $score['subject_name'],
-                'ca1' => $ca1,
-                'ca2' => $ca2,
-                'exam' => $exam,
-                'max_ca1' => $max_ca1,
-                'max_ca2' => $max_ca2,
-                'max_exam' => $max_exam
+                'subject_id' => $score['subject_id'],
+                // IMPORTANT: Send the EXACT original data structure
+                'score_data' => $original_score_data,
+                // Also include a flat representation of all numeric fields for flexibility
+                'raw_values' => $original_score_data
             ];
         }
 
@@ -301,12 +171,12 @@ function exportClassData($session, $term, $class)
             'parent_email' => $student['parent_email'] ?? null
         ];
 
-        // Prepare result data
+        // Prepare result data with ORIGINAL scores preserved
         $results_data[] = [
             'admission_number' => $student['admission_number'],
             'session_year' => $session,
             'term' => $term,
-            'scores' => $formatted_scores,
+            'scores' => $formatted_scores,  // Contains original score_data
             'class_position' => $position['class_position'] ?? null,
             'class_total_students' => getClassTotal($pdo, $class, $session, $term),
             'promoted_to' => $position['promoted_to'] ?? null,
@@ -351,14 +221,13 @@ function exportClassData($session, $term, $class)
         'results' => $results_data
     ];
 
-    // ============ ADD DEBUG CODE HERE (RIGHT BEFORE CURL) ============
-    // Create logs directory if it doesn't exist
+    // Debug logging
     $log_dir = '../logs';
     if (!is_dir($log_dir)) {
         mkdir($log_dir, 0777, true);
     }
 
-    // Save sample of what we're sending
+    // Save sample of what we're sending (for debugging)
     $debug_file = $log_dir . '/export_payload_sample.log';
     $sample = [
         'timestamp' => date('Y-m-d H:i:s'),
@@ -366,15 +235,19 @@ function exportClassData($session, $term, $class)
         'students_count' => count($students_data),
         'results_count' => count($results_data),
         'first_student_sample' => !empty($students_data) ? $students_data[0] : null,
-        'first_result_sample' => !empty($results_data) ? $results_data[0] : null,
-        'first_score_sample' => (!empty($results_data) && !empty($results_data[0]['scores'])) ? $results_data[0]['scores'][0] : null
+        'first_result_sample' => !empty($results_data) ? [
+            'admission_number' => $results_data[0]['admission_number'],
+            'session_year' => $results_data[0]['session_year'],
+            'term' => $results_data[0]['term'],
+            'scores_sample' => !empty($results_data[0]['scores']) ? array_map(function ($s) {
+                return [
+                    'subject_name' => $s['subject_name'],
+                    'score_data' => $s['score_data']  // Shows the original structure
+                ];
+            }, array_slice($results_data[0]['scores'], 0, 2)) : null
+        ] : null
     ];
     file_put_contents($debug_file, json_encode($sample, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
-
-    // Also save the full payload (optional - can be large)
-    // file_put_contents($log_dir . '/full_payload.log', json_encode($payload, JSON_PRETTY_PRINT));
-
-    // ============ END DEBUG CODE ============
 
     // Send to portal
     $ch = curl_init(PORTAL_API_URL);
