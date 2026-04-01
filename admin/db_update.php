@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rebuild_tables'])) {
         $message_type = "error";
     } else {
         // Path to cbt.sql
-        $cbtSqlPath = __DIR__ . '/../cbt.sql';
+        $cbtSqlPath = __DIR__ . '/cbt.sql';
 
         if (!file_exists($cbtSqlPath)) {
             $message = "cbt.sql file not found at: $cbtSqlPath";
