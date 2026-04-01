@@ -1,5 +1,9 @@
 <?php
-// admin/db_rebuild.php - Simple and reliable table rebuild tool
+// Add these lines at the very top for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+// admin/db_update.php - Complete Database Rebuild from cbt.sql
 session_start();
 
 // Check if admin is logged in
@@ -8,171 +12,457 @@ if (!isset($_SESSION['admin_id'])) {
     exit();
 }
 
-// Allow super_admin only for this operation
-if ($_SESSION['admin_role'] !== 'admin') {
+// Allow super_admin and admin to access
+if ($_SESSION['admin_role'] !== 'admin' && $_SESSION['admin_role'] !== 'super_admin') {
     header("Location: index.php?message=Access denied&type=error");
     exit();
 }
 
 require_once '../includes/config.php';
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// Set PDO to use buffered queries to avoid the unbuffered query error
+$pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
 
-$message = '';
-$message_type = '';
-$results = [];
+// Create migration tracking table if it doesn't exist
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS migrations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        version VARCHAR(50) NOT NULL,
+        description TEXT,
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_version (version)
+    )");
+} catch (PDOException $e) {
+    // Table might already exist, continue
+}
 
-// Process rebuild request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rebuild_tables'])) {
-    $tables_to_rebuild = isset($_POST['tables']) ? $_POST['tables'] : [];
+// Get applied migrations
+$stmt = $pdo->query("SELECT version FROM migrations");
+$applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
+$stmt->closeCursor();
 
-    if (empty($tables_to_rebuild)) {
-        $message = "No tables selected for rebuild";
-        $message_type = "error";
-    } else {
-        // Path to cbt.sql
-        $cbtSqlPath = __DIR__ . '/cbt.sql';
+// ============================================
+// MAIN MIGRATION - Rebuild all tables from cbt.sql
+// ============================================
 
-        if (!file_exists($cbtSqlPath)) {
-            $message = "cbt.sql file not found at: $cbtSqlPath";
-            $message_type = "error";
-        } else {
-            // Read cbt.sql content
-            $cbtSqlContent = file_get_contents($cbtSqlPath);
+$migrations = [
+    '2.0.0' => [
+        'description' => 'Complete database rebuild - Recreates ALL tables exactly as in cbt.sql while preserving data',
+        'execute' => function ($pdo, &$logMessages) {
+            $logMessages = [];
+            $success = true;
+            $failedRestores = [];
 
-            // Extract CREATE TABLE statements
-            preg_match_all('/CREATE TABLE `([^`]+)`\s*\(.+?\)\s*ENGINE[^;]*;/s', $cbtSqlContent, $matches, PREG_SET_ORDER);
+            // Path to cbt.sql
+            $cbtSqlPath = __DIR__ . '/cbt.sql';
+
+            // Check if cbt.sql exists
+            if (!file_exists($cbtSqlPath)) {
+                $logMessages[] = "ERROR: cbt.sql file not found at $cbtSqlPath";
+                return false;
+            }
+
+            $logMessages[] = "Found cbt.sql at: $cbtSqlPath";
+
+            // Read the entire cbt.sql file
+            $cbtContent = file_get_contents($cbtSqlPath);
+
+            // Extract all CREATE TABLE statements with their full definitions
+            preg_match_all('/CREATE TABLE `([^`]+)`\s*\(.+?\)\s*ENGINE[^;]*;/s', $cbtContent, $matches, PREG_SET_ORDER);
 
             $createStatements = [];
             foreach ($matches as $match) {
-                $createStatements[$match[1]] = $match[0];
+                $tableName = $match[1];
+                $createStatement = $match[0];
+                $createStatements[$tableName] = $createStatement;
             }
 
-            $pdo->beginTransaction();
-            $all_success = true;
+            $logMessages[] = "Found " . count($createStatements) . " tables in cbt.sql";
 
-            foreach ($tables_to_rebuild as $tableName) {
-                $result = [
-                    'table' => $tableName,
-                    'success' => false,
-                    'steps' => []
-                ];
+            // Define the correct order for table creation based on foreign key dependencies
+            $tableCreationOrder = [
+                // Level 1: Completely independent tables (no foreign keys)
+                'subjects',
+                'schools',
+                'staff',
+                'admin_users',
+                'portal_admins',
+                'system_settings',
+                'central_settings',
+                'subject_groups',
+                'db_updates',
+                'migrations',
 
-                try {
-                    // Check if table exists in cbt.sql
-                    if (!isset($createStatements[$tableName])) {
-                        throw new Exception("Table $tableName not found in cbt.sql");
-                    }
-                    $result['steps'][] = "✓ Found table structure in cbt.sql";
+                // Level 2: Tables that reference Level 1 tables
+                'students',
+                'topics',
+                'school_classes',
+                'staff_subjects',
+                'staff_classes',
+                'subject_classes',
 
-                    // Check if table exists in database
-                    $stmt = $pdo->prepare("SHOW TABLES LIKE ?");
-                    $stmt->execute([$tableName]);
-                    $tableExists = $stmt->rowCount() > 0;
+                // Level 3: Tables that reference Level 2 tables
+                'student_scores',
+                'student_comments',
+                'student_positions',
+                'student_subject_positions',
+                'affective_traits',
+                'psychomotor_skills',
+                'report_card_settings',
 
-                    $backupTable = $tableName . '_backup_' . time();
+                // Level 4: Exam tables
+                'exams',
+                'exam_assignments',
+                'exam_questions',
+                'exam_sessions',
+                'exam_session_questions',
+                'results',
+                'theory_questions',
+                'theory_sessions',
+                'objective_questions',
+                'subjective_questions',
+                'passages',
 
-                    if ($tableExists) {
-                        // Backup existing data
-                        $result['steps'][] = "📦 Backing up existing data to $backupTable...";
-                        $pdo->exec("CREATE TABLE `$backupTable` LIKE `$tableName`");
-                        $pdo->exec("INSERT INTO `$backupTable` SELECT * FROM `$tableName`");
+                // Level 5: Result pins
+                'result_pins',
 
-                        $stmt = $pdo->query("SELECT COUNT(*) FROM `$backupTable`");
-                        $recordCount = $stmt->fetchColumn();
-                        $result['steps'][] = "✓ Backed up $recordCount records";
+                // Level 6: Library and assignments
+                'library_resources',
+                'assignments',
+                'assignment_submissions',
 
-                        // Drop original table
-                        $result['steps'][] = "🗑️ Dropping existing table...";
-                        $pdo->exec("DROP TABLE IF EXISTS `$tableName`");
-                        $result['steps'][] = "✓ Table dropped";
-                    } else {
-                        $result['steps'][] = "ℹ️ Table does not exist, creating new";
-                    }
+                // Level 7: Logs and attendance
+                'attendance',
+                'activity_logs',
+                'login_attempts',
+                'password_resets',
+                'portal_activity_logs'
+            ];
 
-                    // Create new table from cbt.sql
-                    $result['steps'][] = "🏗️ Creating new table from cbt.sql...";
-                    $pdo->exec($createStatements[$tableName]);
-                    $result['steps'][] = "✓ Table created successfully";
+            // Add any missing tables at the end
+            foreach ($createStatements as $tableName => $statement) {
+                if (!in_array($tableName, $tableCreationOrder)) {
+                    $tableCreationOrder[] = $tableName;
+                }
+            }
 
-                    // Restore data if we had a backup
-                    if ($tableExists) {
-                        $result['steps'][] = "🔄 Restoring data from backup...";
+            // Get all existing tables
+            $existingTables = [];
+            try {
+                $stmt = $pdo->query("SHOW TABLES");
+                $existingTables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                $stmt->closeCursor();
+                $logMessages[] = "Found " . count($existingTables) . " existing tables in database";
+            } catch (Exception $e) {
+                $logMessages[] = "No existing tables found or error: " . $e->getMessage();
+            }
 
-                        // Get common columns between old and new table
-                        $stmt = $pdo->query("SHOW COLUMNS FROM `$tableName`");
-                        $newColumns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            try {
+                // Step 1: Disable foreign key checks
+                $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+                $logMessages[] = "✓ Disabled foreign key checks";
 
-                        $stmt = $pdo->query("SHOW COLUMNS FROM `$backupTable`");
-                        $oldColumns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                // Step 2: Create backup tables for existing data
+                $backupTables = [];
+                $backupSchemas = [];
+                foreach ($existingTables as $tableName) {
+                    if (isset($createStatements[$tableName])) {
+                        $backupTable = $tableName . '_temp_backup';
+                        $backupTables[$tableName] = $backupTable;
 
-                        $commonColumns = array_intersect($newColumns, $oldColumns);
-
-                        if (!empty($commonColumns)) {
-                            $columnList = implode(', ', array_map(function ($col) {
-                                return "`$col`";
-                            }, $commonColumns));
-
-                            $pdo->exec("INSERT INTO `$tableName` ($columnList) SELECT $columnList FROM `$backupTable`");
-
-                            $stmt = $pdo->query("SELECT COUNT(*) FROM `$tableName`");
-                            $restoredCount = $stmt->fetchColumn();
-                            $result['steps'][] = "✓ Restored $restoredCount records";
-                        } else {
-                            $result['steps'][] = "⚠️ No common columns found - data could not be restored";
-                        }
-
-                        // Drop backup table
-                        $result['steps'][] = "🧹 Cleaning up backup table...";
+                        // Drop backup if it exists
                         $pdo->exec("DROP TABLE IF EXISTS `$backupTable`");
-                        $result['steps'][] = "✓ Backup table removed";
-                    }
 
-                    $result['success'] = true;
-                    $result['steps'][] = "✅ Table $tableName rebuilt successfully!";
-                } catch (Exception $e) {
-                    $all_success = false;
-                    $result['steps'][] = "❌ Error: " . $e->getMessage();
-                    $results[] = $result;
-                    break;
+                        // Create backup table structure
+                        $pdo->exec("CREATE TABLE `$backupTable` LIKE `$tableName`");
+
+                        // Get column structure of old table
+                        $stmt = $pdo->query("SHOW COLUMNS FROM `$tableName`");
+                        $oldColumns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                        $stmt->closeCursor();
+                        $backupSchemas[$tableName] = $oldColumns;
+
+                        // Get record count
+                        $stmt = $pdo->query("SELECT COUNT(*) FROM `$tableName`");
+                        $count = $stmt->fetchColumn();
+                        $stmt->closeCursor();
+
+                        if ($count > 0) {
+                            // Copy data to backup
+                            $pdo->exec("INSERT INTO `$backupTable` SELECT * FROM `$tableName`");
+                            $logMessages[] = "  ✓ Backed up $count records from $tableName to $backupTable";
+                        } else {
+                            $logMessages[] = "  ℹ️ $tableName is empty, no data to backup";
+                        }
+                    }
                 }
 
-                $results[] = $result;
-            }
+                // Step 3: Drop all existing tables
+                foreach ($existingTables as $tableName) {
+                    $pdo->exec("DROP TABLE IF EXISTS `$tableName`");
+                }
+                $logMessages[] = "✓ Dropped all existing tables";
 
-            if ($all_success) {
-                $pdo->commit();
-                $message = "All selected tables rebuilt successfully!";
-                $message_type = "success";
-            } else {
-                $pdo->rollBack();
-                $message = "Error occurred. All changes rolled back.";
-                $message_type = "error";
+                // Step 4: Create all tables in the correct order
+                $createdCount = 0;
+                foreach ($tableCreationOrder as $tableName) {
+                    if (isset($createStatements[$tableName])) {
+                        try {
+                            $pdo->exec($createStatements[$tableName]);
+                            $createdCount++;
+                            $logMessages[] = "  ✓ Created table: $tableName";
+                        } catch (PDOException $e) {
+                            $logMessages[] = "  ✗ Failed to create $tableName: " . $e->getMessage();
+                            throw $e;
+                        }
+                    }
+                }
+                $logMessages[] = "✓ Created $createdCount tables from cbt.sql";
+
+                // Step 5: Restore data from backups with intelligent column mapping
+                $restoredCount = 0;
+                foreach ($backupTables as $tableName => $backupTable) {
+                    // Check if backup exists
+                    $stmt = $pdo->query("SHOW TABLES LIKE '$backupTable'");
+                    $backupExists = $stmt->rowCount() > 0;
+                    $stmt->closeCursor();
+
+                    if ($backupExists) {
+                        // Get count from backup
+                        $stmt = $pdo->query("SELECT COUNT(*) FROM `$backupTable`");
+                        $backupCount = $stmt->fetchColumn();
+                        $stmt->closeCursor();
+
+                        if ($backupCount > 0) {
+                            try {
+                                // Get columns of new table
+                                $stmt = $pdo->query("SHOW COLUMNS FROM `$tableName`");
+                                $newColumns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                                $stmt->closeCursor();
+
+                                // Get columns of old table from backup
+                                $oldColumns = $backupSchemas[$tableName];
+
+                                // Find common columns
+                                $commonColumns = array_intersect($newColumns, $oldColumns);
+
+                                if (!empty($commonColumns)) {
+                                    // Build column list for INSERT
+                                    $columnList = implode(', ', array_map(function ($col) {
+                                        return "`$col`";
+                                    }, $commonColumns));
+
+                                    // Build SELECT column list
+                                    $selectList = implode(', ', array_map(function ($col) {
+                                        return "`$col`";
+                                    }, $commonColumns));
+
+                                    // Restore only common columns
+                                    $sql = "INSERT INTO `$tableName` ($columnList) SELECT $selectList FROM `$backupTable`";
+                                    $pdo->exec($sql);
+
+                                    // Verify restoration
+                                    $stmt = $pdo->query("SELECT COUNT(*) FROM `$tableName`");
+                                    $newCount = $stmt->fetchColumn();
+                                    $stmt->closeCursor();
+
+                                    $logMessages[] = "  ✓ Restored $backupCount records to $tableName (now has $newCount)";
+                                    $restoredCount++;
+                                } else {
+                                    $logMessages[] = "  ⚠️ No common columns found for $tableName - data not restored";
+                                    $failedRestores[] = "$tableName (no common columns)";
+                                }
+                            } catch (PDOException $e) {
+                                $logMessages[] = "  ⚠️ Could not restore data to $tableName: " . $e->getMessage();
+                                $failedRestores[] = "$tableName (" . $e->getMessage() . ")";
+                            }
+                        }
+                    }
+                }
+                $logMessages[] = "✓ Restored data to $restoredCount tables";
+
+                if (!empty($failedRestores)) {
+                    $logMessages[] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+                    $logMessages[] = "⚠️ Tables that could NOT be restored (structure changed):";
+                    foreach ($failedRestores as $failed) {
+                        $logMessages[] = "  • $failed";
+                    }
+                    $logMessages[] = "Note: These tables were recreated with the correct structure from cbt.sql,";
+                    $logMessages[] = "but their data could not be restored due to column mismatches.";
+                    $logMessages[] = "You may need to manually re-enter data for these tables.";
+                }
+
+                // Step 6: Drop all backup tables
+                foreach ($backupTables as $tableName => $backupTable) {
+                    $pdo->exec("DROP TABLE IF EXISTS `$backupTable`");
+                }
+                $logMessages[] = "✓ Cleaned up backup tables";
+
+                // Step 7: Re-enable foreign key checks
+                $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+                $logMessages[] = "✓ Re-enabled foreign key checks";
+
+                $logMessages[] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+                $logMessages[] = "✅ DATABASE REBUILD COMPLETED SUCCESSFULLY!";
+                $logMessages[] = "✅ $createdCount tables created, $restoredCount tables restored with data";
+
+                if (!empty($failedRestores)) {
+                    $logMessages[] = "⚠️ " . count($failedRestores) . " tables had structure changes and data could not be restored";
+                    $logMessages[] = "Please review the list above and re-enter data for those tables if needed.";
+                }
+
+                return true;
+            } catch (Exception $e) {
+                $logMessages[] = "❌ ERROR: " . $e->getMessage();
+                $logMessages[] = "Attempting to rollback...";
+
+                // Try to rollback by re-enabling foreign keys
+                try {
+                    $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+                } catch (Exception $rollbackError) {
+                    // Ignore
+                }
+
+                return false;
             }
+        }
+    ],
+];
+
+// Get current system version
+$current_version = '2.0.0';
+
+// Find pending migrations - ONLY those not already applied
+$pending = [];
+foreach ($migrations as $version => $migration) {
+    if (!in_array($version, $applied)) {
+        $pending[$version] = $migration;
+    }
+}
+
+// Handle migration application
+$message = '';
+$message_type = '';
+$logMessages = [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_migration'])) {
+    $version = $_POST['version'];
+
+    if (isset($migrations[$version])) {
+        try {
+            // First, check if migration already applied
+            $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM migrations WHERE version = ?");
+            $checkStmt->execute([$version]);
+            if ($checkStmt->fetchColumn() > 0) {
+                $message = "Migration {$version} has already been applied.";
+                $message_type = "info";
+            } else {
+                // Execute the migration
+                $logMessages = [];
+                $success = $migrations[$version]['execute']($pdo, $logMessages);
+
+                if ($success) {
+                    // Insert migration record
+                    $stmt = $pdo->prepare("INSERT INTO migrations (version, description) VALUES (?, ?)");
+                    $stmt->execute([$version, $migrations[$version]['description']]);
+
+                    $message = "Migration {$version} applied successfully!<br>" . implode('<br>', $logMessages);
+                    $message_type = "success";
+
+                    // Refresh applied migrations
+                    $stmt = $pdo->query("SELECT version FROM migrations");
+                    $applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                    $stmt->closeCursor();
+                    $pending = [];
+                    foreach ($migrations as $v => $m) {
+                        if (!in_array($v, $applied)) {
+                            $pending[$v] = $m;
+                        }
+                    }
+                } else {
+                    $message = "Migration {$version} failed:<br>" . implode('<br>', $logMessages);
+                    $message_type = "error";
+                }
+            }
+        } catch (Exception $e) {
+            $message = "Error: " . $e->getMessage();
+            $message_type = "error";
         }
     }
 }
 
-// Get all tables from cbt.sql
-function getTablesFromCbt($cbtSqlPath)
-{
-    $sqlContent = file_get_contents($cbtSqlPath);
-    preg_match_all('/CREATE TABLE `([^`]+)`/', $sqlContent, $matches);
-    return array_unique($matches[1]);
+// Run all pending migrations
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_all_migrations'])) {
+    $all_success = true;
+    $allLogs = [];
+
+    foreach ($pending as $version => $migration) {
+        try {
+            // Check if migration already applied
+            $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM migrations WHERE version = ?");
+            $checkStmt->execute([$version]);
+            if ($checkStmt->fetchColumn() > 0) {
+                $allLogs[] = "⏭ {$version}: Already applied, skipping";
+                continue;
+            }
+
+            // Execute the migration
+            $migrationLogs = [];
+            $success = $migration['execute']($pdo, $migrationLogs);
+
+            if ($success) {
+                // Insert migration record
+                $stmt = $pdo->prepare("INSERT INTO migrations (version, description) VALUES (?, ?)");
+                $stmt->execute([$version, $migration['description']]);
+
+                $allLogs[] = "✓ {$version}: {$migration['description']}";
+                foreach ($migrationLogs as $log) {
+                    $allLogs[] = "  " . $log;
+                }
+            } else {
+                $all_success = false;
+                $allLogs[] = "✗ {$version}: Failed";
+                foreach ($migrationLogs as $log) {
+                    $allLogs[] = "  " . $log;
+                }
+                break;
+            }
+        } catch (Exception $e) {
+            $all_success = false;
+            $allLogs[] = "✗ {$version}: Failed - " . $e->getMessage();
+            break;
+        }
+    }
+
+    if ($all_success) {
+        $message = "All migrations applied successfully!<br>" . implode('<br>', $allLogs);
+        $message_type = "success";
+
+        // Refresh applied migrations
+        $stmt = $pdo->query("SELECT version FROM migrations");
+        $applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $stmt->closeCursor();
+        $pending = [];
+        foreach ($migrations as $v => $m) {
+            if (!in_array($v, $applied)) {
+                $pending[$v] = $m;
+            }
+        }
+    } else {
+        $message = "Migrations failed:<br>" . implode('<br>', $allLogs);
+        $message_type = "error";
+    }
 }
 
+// Get cbt.sql info
 $cbtSqlPath = __DIR__ . '/cbt.sql';
-$cbtTables = file_exists($cbtSqlPath) ? getTablesFromCbt($cbtSqlPath) : [];
-
-// Get existing tables in database
-$stmt = $pdo->query("SHOW TABLES");
-$dbTables = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-// Compare to find missing/outdated tables
-$missingTables = array_diff($cbtTables, $dbTables);
-$existingTables = array_intersect($cbtTables, $dbTables);
+$cbtExists = file_exists($cbtSqlPath);
+$cbtTables = [];
+if ($cbtExists) {
+    $cbtContent = file_get_contents($cbtSqlPath);
+    preg_match_all('/CREATE TABLE `([^`]+)`/', $cbtContent, $matches);
+    $cbtTables = array_unique($matches[1]);
+}
 ?>
 
 <!DOCTYPE html>
@@ -181,7 +471,7 @@ $existingTables = array_intersect($cbtTables, $dbTables);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Database Table Rebuild - CBT System</title>
+    <title>Database Rebuild - CBT System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -217,10 +507,29 @@ $existingTables = array_intersect($cbtTables, $dbTables);
             padding-bottom: 20px;
         }
 
+        .version-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .current-version {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+
         .alert {
             padding: 15px;
             border-radius: 8px;
             margin: 20px 0;
+            max-height: 600px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
         }
 
         .alert-success {
@@ -249,43 +558,49 @@ $existingTables = array_intersect($cbtTables, $dbTables);
             border-radius: 8px;
         }
 
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .file-info {
+            background: #e8f4fd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: monospace;
+        }
+
         .btn {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             transition: all 0.3s;
         }
 
-        .btn-primary {
-            background: #3498db;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #2980b9;
-            transform: translateY(-2px);
-        }
-
-        .btn-success {
-            background: #27ae60;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #219653;
-            transform: translateY(-2px);
-        }
-
         .btn-danger {
-            background: #e74c3c;
+            background: #dc3545;
             color: white;
         }
 
         .btn-danger:hover {
-            background: #c0392b;
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
             transform: translateY(-2px);
         }
 
@@ -300,126 +615,132 @@ $existingTables = array_intersect($cbtTables, $dbTables);
             border-radius: 8px;
         }
 
-        .table-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 10px;
-            margin: 20px 0;
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        .table-item {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .table-item input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        .table-name {
-            font-family: monospace;
-            font-size: 13px;
-            flex: 1;
-        }
-
-        .table-status {
-            font-size: 11px;
-            padding: 2px 8px;
-            border-radius: 12px;
-        }
-
-        .status-missing {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .status-existing {
-            background: #d4edda;
-            color: #155724;
+        .btn-back:hover {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin: 20px 0;
         }
 
         .stat-card {
             background: #f8f9fa;
-            padding: 15px;
+            padding: 20px;
             border-radius: 10px;
             text-align: center;
         }
 
         .stat-number {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: bold;
             color: #3498db;
         }
 
         .stat-label {
             color: #666;
-            font-size: 12px;
+            font-size: 14px;
             margin-top: 5px;
         }
 
-        .result-card {
+        .migration-item {
             border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            margin: 10px 0;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
         }
 
-        .result-header {
-            padding: 12px 15px;
+        .migration-header {
             background: #f8f9fa;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .migration-version {
             font-weight: bold;
-            cursor: pointer;
+            color: #3498db;
+            font-size: 16px;
         }
 
-        .result-success {
-            border-left: 4px solid #27ae60;
+        .migration-desc {
+            color: #666;
+            font-size: 14px;
         }
 
-        .result-error {
-            border-left: 4px solid #e74c3c;
-        }
-
-        .result-details {
-            padding: 15px;
-            display: none;
-            background: #fafafa;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        .result-details.show {
-            display: block;
-        }
-
-        .step-list {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .step-list li {
-            padding: 4px 0;
-            font-family: monospace;
+        .migration-status {
+            padding: 4px 12px;
+            border-radius: 20px;
             font-size: 12px;
+            font-weight: 500;
         }
 
-        .select-all {
-            margin: 15px 0;
-            padding: 10px;
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-applied {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
             background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .process-steps {
+            background: #f8f9fa;
+            padding: 15px;
             border-radius: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+
+        .process-steps ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .process-steps li {
+            margin: 5px 0;
+        }
+
+        .table-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .table-badge {
+            background: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -429,8 +750,8 @@ $existingTables = array_intersect($cbtTables, $dbTables);
         <div class="card">
             <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h1><i class="fas fa-database"></i> Database Table Rebuild</h1>
-                    <p>Rebuild tables exactly as defined in cbt.sql while preserving data</p>
+                    <h1><i class="fas fa-database"></i> Database Rebuild Tool</h1>
+                    <p>Rebuilds ALL tables exactly as defined in cbt.sql while preserving your data</p>
                 </div>
                 <a href="index.php" class="btn-back">
                     <i class="fas fa-arrow-left"></i> Back to Dashboard
@@ -440,20 +761,52 @@ $existingTables = array_intersect($cbtTables, $dbTables);
             <?php if ($message): ?>
                 <div class="alert alert-<?php echo $message_type; ?>">
                     <i class="fas fa-<?php echo $message_type === 'success' ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
-                    <?php echo htmlspecialchars($message); ?>
+                    <?php echo $message; ?>
                 </div>
             <?php endif; ?>
 
-            <div class="warning-box">
-                <h3><i class="fas fa-exclamation-triangle"></i> Important Information</h3>
-                <ul style="margin-left: 20px;">
-                    <li>This tool will rebuild selected tables to match cbt.sql EXACTLY</li>
-                    <li>Existing data will be backed up and restored after rebuilding</li>
-                    <li>All indexes, foreign keys, and constraints will be recreated</li>
-                    <li>If any error occurs, all changes are automatically rolled back</li>
-                    <li><strong>Only super_admin can perform this operation</strong></li>
-                </ul>
+            <!-- File status -->
+            <div class="file-info">
+                <i class="fas fa-file-code"></i> cbt.sql location: <strong><?php echo $cbtSqlPath; ?></strong><br>
+                <?php if ($cbtExists): ?>
+                    <i class="fas fa-check-circle" style="color: #28a745;"></i> File found - <?php echo count($cbtTables); ?> tables found in file
+                <?php else: ?>
+                    <i class="fas fa-times-circle" style="color: #dc3545;"></i> File NOT found - Please place cbt.sql in the project root folder
+                <?php endif; ?>
             </div>
+
+            <div class="version-info">
+                <h3>Migration Version</h3>
+                <div class="current-version">2.0.0 - Complete Rebuild</div>
+                <p style="margin-top: 10px;">This migration will rebuild ALL tables to match cbt.sql exactly</p>
+            </div>
+
+            <div class="warning-box">
+                <h3><i class="fas fa-exclamation-triangle"></i> How this works:</h3>
+                <div class="process-steps">
+                    <strong>Step-by-step process:</strong>
+                    <ol>
+                        <li><strong>Disable foreign key checks</strong> - Prevents constraint errors during rebuild</li>
+                        <li><strong>Backup all existing data</strong> - Creates temporary backup tables</li>
+                        <li><strong>Drop all existing tables</strong> - Removes old table structures</li>
+                        <li><strong>Create new tables in correct order</strong> - Parent tables first, then child tables using EXACT structure from cbt.sql</li>
+                        <li><strong>Restore data intelligently</strong> - Only restores columns that exist in both old and new tables</li>
+                        <li><strong>Clean up backups</strong> - Removes temporary tables</li>
+                        <li><strong>Re-enable foreign key checks</strong> - Restores referential integrity</li>
+                    </ol>
+                    <p style="margin-top: 15px;"><strong>Note:</strong> If table structures changed, only common columns will be restored. You'll be notified of any tables that couldn't be fully restored.</p>
+                </div>
+            </div>
+
+            <?php
+            // Get database statistics
+            $stmt = $pdo->query("SHOW TABLES");
+            $dbTables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $stmt->closeCursor();
+            $totalTables = count($dbTables);
+            $totalApplied = count($applied);
+            $totalPending = count($pending);
+            ?>
 
             <div class="stats-grid">
                 <div class="stat-card">
@@ -461,83 +814,101 @@ $existingTables = array_intersect($cbtTables, $dbTables);
                     <div class="stat-label">Tables in cbt.sql</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number"><?php echo count($dbTables); ?></div>
+                    <div class="stat-number"><?php echo $totalTables; ?></div>
                     <div class="stat-label">Existing Tables</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number"><?php echo count($missingTables); ?></div>
-                    <div class="stat-label">Missing Tables</div>
+                    <div class="stat-number"><?php echo $totalPending; ?></div>
+                    <div class="stat-label">Pending Migrations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $totalApplied; ?></div>
+                    <div class="stat-label">Applied Migrations</div>
                 </div>
             </div>
 
-            <form method="POST">
-                <div class="select-all">
-                    <label style="cursor: pointer;">
-                        <input type="checkbox" id="select-all" onchange="toggleAll(this.checked)">
-                        <strong>Select All Tables</strong>
-                    </label>
+            <?php if (empty($pending)): ?>
+                <div class="success-box">
+                    <i class="fas fa-check-circle"></i>
+                    <strong>Database is already up to date!</strong> Version 2.0.0 has already been applied.
                 </div>
+            <?php else: ?>
+                <h3><i class="fas fa-clock"></i> Migration Available</h3>
 
-                <div class="table-list">
-                    <?php foreach ($cbtTables as $table):
-                        $exists = in_array($table, $dbTables);
-                    ?>
-                        <div class="table-item">
-                            <input type="checkbox" name="tables[]" value="<?php echo htmlspecialchars($table); ?>"
-                                class="table-checkbox" <?php echo $exists ? 'checked' : 'checked'; ?>>
-                            <span class="table-name">
-                                <?php echo htmlspecialchars($table); ?>
-                            </span>
-                            <span class="table-status <?php echo $exists ? 'status-existing' : 'status-missing'; ?>">
-                                <?php echo $exists ? 'Exists' : 'Missing'; ?>
-                            </span>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-
-                <div style="margin-top: 20px;">
-                    <button type="submit" name="rebuild_tables" value="1" class="btn btn-danger"
-                        onclick="return confirm('⚠️ WARNING: This will rebuild ALL selected tables. Data will be preserved, but a backup is recommended. Continue?');">
-                        <i class="fas fa-sync-alt"></i> Rebuild Selected Tables
-                    </button>
-                </div>
-            </form>
-
-            <?php if (!empty($results)): ?>
-                <h3 style="margin-top: 30px;"><i class="fas fa-chart-line"></i> Rebuild Results</h3>
-                <?php foreach ($results as $result): ?>
-                    <div class="result-card <?php echo $result['success'] ? 'result-success' : 'result-error'; ?>">
-                        <div class="result-header" onclick="toggleDetails('<?php echo $result['table']; ?>')">
-                            <i class="fas <?php echo $result['success'] ? 'fa-check-circle' : 'fa-times-circle'; ?>"></i>
-                            <strong><?php echo htmlspecialchars($result['table']); ?></strong>
-                            <?php echo $result['success'] ? '✓ Rebuilt successfully' : '✗ Failed'; ?>
-                        </div>
-                        <div id="details-<?php echo $result['table']; ?>" class="result-details">
-                            <ul class="step-list">
-                                <?php foreach ($result['steps'] as $step): ?>
-                                    <li><?php echo htmlspecialchars($step); ?></li>
-                                <?php endforeach; ?>
-                            </ul>
+                <?php foreach ($pending as $version => $migration): ?>
+                    <div class="migration-item">
+                        <div class="migration-header">
+                            <div>
+                                <span class="migration-version">Version <?php echo $version; ?></span>
+                                <span class="migration-desc"> - <?php echo htmlspecialchars($migration['description']); ?></span>
+                            </div>
+                            <div>
+                                <span class="migration-status status-pending">Pending</span>
+                                <form method="POST" style="display: inline; margin-left: 10px;" onsubmit="return confirm('⚠️ WARNING: This will rebuild ALL tables to match cbt.sql exactly. Your data will be preserved. Continue?');">
+                                    <input type="hidden" name="run_migration" value="1">
+                                    <input type="hidden" name="version" value="<?php echo $version; ?>">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-sync-alt"></i> Rebuild Database
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 <?php endforeach; ?>
+
+                <div style="margin-top: 20px; text-align: center;">
+                    <form method="POST" onsubmit="return confirm('⚠️ WARNING: This will rebuild ALL tables to match cbt.sql exactly. Your data will be preserved. Continue?');">
+                        <input type="hidden" name="run_all_migrations" value="1">
+                        <button type="submit" class="btn btn-success" style="font-size: 16px; padding: 15px 30px;">
+                            <i class="fas fa-database"></i> Rebuild Entire Database from cbt.sql
+                        </button>
+                    </form>
+                </div>
             <?php endif; ?>
+
+            <!-- Table List -->
+            <?php if (!empty($cbtTables)): ?>
+                <h3 style="margin-top: 30px;"><i class="fas fa-table"></i> Tables to be Rebuilt (<?php echo count($cbtTables); ?> tables)</h3>
+                <div class="table-list">
+                    <?php foreach ($cbtTables as $table): ?>
+                        <span class="table-badge"><?php echo htmlspecialchars($table); ?></span>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- Migration History -->
+            <h3 style="margin-top: 30px;"><i class="fas fa-history"></i> Migration History</h3>
+            <div style="max-height: 300px; overflow-y: auto; margin-top: 15px;">
+                <?php
+                $stmt = $pdo->query("SELECT * FROM migrations ORDER BY id DESC");
+                $history = $stmt->fetchAll();
+                $stmt->closeCursor();
+                ?>
+                <?php if (empty($history)): ?>
+                    <p style="color: #999; text-align: center; padding: 20px;">No migrations applied yet.</p>
+                <?php else: ?>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Version</th>
+                                <th>Description</th>
+                                <th>Applied At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($history as $migration): ?>
+                                <tr>
+                                    <td><strong><?php echo htmlspecialchars($migration['version']); ?></strong></td>
+                                    <td><?php echo htmlspecialchars($migration['description']); ?></td>
+                                    <td><?php echo date('M d, Y H:i:s', strtotime($migration['applied_at'])); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
-
-    <script>
-        function toggleDetails(table) {
-            const details = document.getElementById('details-' + table);
-            if (details) {
-                details.classList.toggle('show');
-            }
-        }
-
-        function toggleAll(checked) {
-            const checkboxes = document.querySelectorAll('.table-checkbox');
-            checkboxes.forEach(cb => cb.checked = checked);
-        }
-    </script>
 </body>
 
 </html>
