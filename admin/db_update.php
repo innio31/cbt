@@ -9,7 +9,7 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 // Allow super_admin only for this operation
-if ($_SESSION['admin_role'] !== 'super_admin') {
+if ($_SESSION['admin_role'] !== 'admin') {
     header("Location: index.php?message=Access denied&type=error");
     exit();
 }
@@ -163,7 +163,7 @@ function getTablesFromCbt($cbtSqlPath)
     return array_unique($matches[1]);
 }
 
-$cbtSqlPath = __DIR__ . '/../cbt.sql';
+$cbtSqlPath = __DIR__ . '/cbt.sql';
 $cbtTables = file_exists($cbtSqlPath) ? getTablesFromCbt($cbtSqlPath) : [];
 
 // Get existing tables in database
