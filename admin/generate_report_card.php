@@ -261,25 +261,23 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
             }
 
             body {
-                font-family: Arial, sans-serif;
+                font-family: 'Segoe UI', Arial, sans-serif;
                 margin: 0;
                 padding: 0;
-                font-size: 7.2pt;
-                /* Tightened font for one-page fit */
-                line-height: 1.1;
+                font-size: 9pt;
+                /* Increased base size */
+                line-height: 1.3;
                 background: white;
             }
 
             .container {
                 width: 210mm;
                 height: 297mm;
-                /* Standard A4 */
                 margin: 0 auto;
-                padding: 10mm;
+                padding: 8mm;
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
-                /* Strict one-page restriction */
             }
 
             .header {
@@ -288,39 +286,38 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
             }
 
             .school-name {
-                font-size: 15pt;
+                font-size: 18pt;
+                /* Larger and bolder */
                 font-weight: bold;
                 margin: 0;
+                color: #1a237e;
             }
 
             .motto {
-                font-size: 9pt;
+                font-size: 10pt;
                 margin: 2px 0;
                 font-style: italic;
             }
 
-            .contact-info {
-                font-size: 7.5pt;
-                margin: 2px 0;
-            }
-
             .divider {
-                border-top: 2px solid #000;
-                margin: 5px 0;
+                border-top: 2.5px solid #000;
+                margin: 6px 0;
             }
 
             .section-title {
                 text-align: center;
                 font-weight: bold;
-                font-size: 10pt;
-                margin: 5px 0;
+                font-size: 11pt;
+                margin: 8px 0 4px 0;
                 text-transform: uppercase;
+                background-color: #f2f2f2;
+                padding: 3px;
             }
 
             table {
                 width: 100%;
                 border-collapse: collapse;
-                margin-bottom: 5px;
+                margin-bottom: 8px;
             }
 
             table,
@@ -330,105 +327,82 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
             }
 
             td {
-                padding: 2.5px;
+                padding: 4px 6px;
+                /* Roomier padding */
             }
 
             .label {
                 font-weight: bold;
-                background: #f0f0f0;
+                background: #f8f8f8;
                 width: 18%;
             }
 
-            /* Academic Scores Table */
+            /* Academic Scores Table - Enhanced Size */
             .scores-table {
-                font-size: 7pt;
+                font-size: 9pt;
             }
 
             .scores-table th {
-                background: #e0e0e0;
-                padding: 3px;
+                background: #1a237e;
+                color: white;
+                padding: 6px;
+                text-transform: uppercase;
+                font-size: 8.5pt;
             }
 
             .subject-col {
                 text-align: left;
-                width: 22%;
+                width: 28%;
                 font-weight: bold;
             }
 
-            /* Layout Fix: Side-by-Side Traits to save vertical space */
+            /* Side-by-Side Traits Layout */
             .traits-row {
                 display: flex;
-                gap: 10px;
-                margin-bottom: 5px;
+                justify-content: space-between;
+                gap: 15px;
+                margin-top: 5px;
             }
 
             .traits-column {
                 flex: 1;
             }
 
-            .compact-table {
-                font-size: 6.8pt;
-                margin: 0;
-            }
-
             .section-header {
-                background: #f0f0f0;
+                background: #3949ab;
+                color: white;
                 font-weight: bold;
                 text-align: center;
-            }
-
-            /* Rating Key and Comments */
-            .rating-key {
-                font-size: 6.5pt;
-                margin-bottom: 5px;
-            }
-
-            .comments-section div {
-                margin: 3px 0;
                 padding: 4px;
+                margin-bottom: 0;
+            }
+
+            .compact-table {
+                font-size: 8.5pt;
+                margin-top: 0;
+            }
+
+            /* Rating Key */
+            .rating-key {
+                font-size: 8pt;
+                text-align: center;
+                margin: 5px 0;
+            }
+
+            /* Comments Section */
+            .comments-section div {
+                margin: 4px 0;
+                padding: 8px;
                 border: 1px solid #000;
-                min-height: 35px;
-                line-height: 1.2;
+                min-height: 40px;
             }
 
             .footer {
                 text-align: center;
-                font-size: 7pt;
+                font-size: 8.5pt;
                 margin-top: auto;
-                padding-top: 5px;
-            }
-
-            .rating-circle {
-                display: inline-block;
-                width: 15px;
-                height: 15px;
-                line-height: 15px;
-                border-radius: 50%;
-                text-align: center;
-                font-weight: bold;
-                color: white;
-                font-size: 6pt;
-                margin-left: 2px;
-            }
-
-            .rating-5 {
-                background: #006600;
-            }
-
-            .rating-4 {
-                background: #339933;
-            }
-
-            .rating-3 {
-                background: #999900;
-            }
-
-            .rating-2 {
-                background: #cc6600;
-            }
-
-            .rating-1 {
-                background: #cc0000;
+                padding-top: 10px;
+                border-top: 1px solid #ccc;
             }
 
             @media print {
@@ -438,25 +412,12 @@ function generateReportCardHTML($student, $scores, $position, $comments, $affect
 
                 .container {
                     padding: 5mm;
-                    margin: 0;
                     height: 100vh;
                 }
 
                 body {
                     -webkit-print-color-adjust: exact;
                 }
-            }
-
-            .btn {
-                background: #4a90e2;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                margin: 5px;
-                border-radius: 4px;
-                cursor: pointer;
-                text-decoration: none;
-                display: inline-block;
             }
         </style>
     </head>
