@@ -60,8 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 /**
- * NEW FUNCTION: Export raw score data without transformation
- * This preserves the exact structure from the database
+ * EXPORT FUNCTION - Now matches the structure expected by generate_report_card.php
  */
 function exportClassData($session, $term, $class)
 {
@@ -69,7 +68,8 @@ function exportClassData($session, $term, $class)
 
     // Get students in class
     $stmt = $pdo->prepare("
-        SELECT id, admission_number, full_name, class, gender, dob, parent_phone, parent_email 
+        SELECT id, admission_number, full_name, class, gender, dob as date_of_birth, 
+               parent_phone, parent_email 
         FROM students 
         WHERE class = ? AND status = 'active'
         ORDER BY full_name ASC
@@ -81,6 +81,38 @@ function exportClassData($session, $term, $class)
         return ['success' => false, 'error' => 'No students found in this class'];
     }
 
+    // Get report card settings for this session/term
+    $stmt = $pdo->prepare("
+        SELECT * FROM report_card_settings WHERE session = ? AND term = ?
+    ");
+    $stmt->execute([$session, $term]);
+    $settings = $stmt->fetch();
+
+    if (!$settings) {
+        // Use default settings if none found
+        $settings = [
+            'session' => $session,
+            'term' => $term,
+            'max_score' => 100,
+            'score_types' => json_encode([
+                ['name' => 'CA1', 'max_score' => 10],
+                ['name' => 'CA2', 'max_score' => 10],
+                ['name' => 'Exam', 'max_score' => 80]
+            ]),
+            'grading_system' => 'simple',
+            'next_resumption_date' => null,
+            'current_resumption_date' => null,
+            'current_closing_date' => null,
+            'days_school_opened' => 90
+        ];
+    }
+
+    $score_types = json_decode($settings['score_types'], true) ?: [
+        ['name' => 'CA1', 'max_score' => 10],
+        ['name' => 'CA2', 'max_score' => 10],
+        ['name' => 'Exam', 'max_score' => 80]
+    ];
+
     $students_data = [];
     $results_data = [];
     $processed = 0;
@@ -88,7 +120,7 @@ function exportClassData($session, $term, $class)
     $errors = [];
 
     foreach ($students as $student) {
-        // Get scores for this student - PRESERVE ORIGINAL STRUCTURE
+        // Get scores for this student - with proper calculations
         $stmt = $pdo->prepare("
             SELECT ss.*, sub.subject_name, sub.id as subject_id 
             FROM student_scores ss
@@ -106,27 +138,79 @@ function exportClassData($session, $term, $class)
             continue;
         }
 
-        // ============ KEY CHANGE: Preserve original score_data exactly ============
+        // Calculate totals and prepare scores in the SAME format as generate_report_card.php
         $formatted_scores = [];
-        foreach ($scores as $score) {
-            // Decode the original score_data
-            $original_score_data = json_decode($score['score_data'], true);
+        $total_marks = 0;
+        $total_percentage = 0;
+        $subject_count = count($scores);
 
-            // If decoding failed or it's not an array, use empty array
-            if (!is_array($original_score_data)) {
-                $original_score_data = [];
+        foreach ($scores as $index => $score) {
+            // Decode the original score_data
+            $score_data = json_decode($score['score_data'], true);
+            if (!is_array($score_data)) {
+                $score_data = [];
             }
 
-            // Add metadata to help portal understand the structure
+            // Calculate total score from individual components
+            $subject_total = 0;
+            $subject_max = 0;
+
+            foreach ($score_types as $type) {
+                $score_value = floatval($score_data[$type['name']] ?? 0);
+                $subject_total += $score_value;
+                $subject_max += floatval($type['max_score']);
+            }
+
+            // Calculate percentage
+            $percentage = $subject_max > 0 ? round(($subject_total / $subject_max) * 100, 2) : 0;
+            $grade = calculateGrade($percentage);
+            $remark = getPerformanceRemark($percentage);
+
+            $total_marks += $subject_total;
+            $total_percentage += $percentage;
+
+            // Format scores EXACTLY like generate_report_card.php expects
             $formatted_scores[] = [
                 'subject_name' => $score['subject_name'],
                 'subject_id' => $score['subject_id'],
-                // IMPORTANT: Send the EXACT original data structure
-                'score_data' => $original_score_data,
-                // Also include a flat representation of all numeric fields for flexibility
-                'raw_values' => $original_score_data
+                'score_data' => $score_data,  // Original raw scores (CA1, CA2, Exam, etc.)
+                'total_score' => $subject_total,
+                'percentage' => $percentage,
+                'grade' => $grade,
+                'remark' => $remark,
+                'max_score' => $subject_max,
+                // Also include individual component values for easy access
+                'components' => $score_data
             ];
         }
+
+        // Calculate overall average
+        $overall_average = $subject_count > 0 ? $total_percentage / $subject_count : 0;
+        $overall_grade = calculateGrade($overall_average);
+        $overall_remark = getPerformanceRemark($overall_average);
+
+        // Get class position
+        $stmt = $pdo->prepare("
+            SELECT * FROM student_positions 
+            WHERE student_id = ? AND session = ? AND term = ?
+        ");
+        $stmt->execute([$student['id'], $session, $term]);
+        $position = $stmt->fetch();
+
+        // Get class total students
+        $class_total = getClassTotal($pdo, $class, $session, $term);
+
+        // Get highest and lowest averages in class
+        $stmt = $pdo->prepare("
+            SELECT MAX(average) as highest, MIN(average) as lowest 
+            FROM student_positions sp 
+            JOIN students s ON sp.student_id = s.id 
+            WHERE s.class = ? AND sp.session = ? AND sp.term = ? AND average > 0
+        ");
+        $stmt->execute([$class, $session, $term]);
+        $class_stats = $stmt->fetch();
+        $highest_average = $class_stats['highest'] ?? 0;
+        $lowest_average = $class_stats['lowest'] ?? 0;
 
         // Get comments
         $stmt = $pdo->prepare("
@@ -135,14 +219,6 @@ function exportClassData($session, $term, $class)
         ");
         $stmt->execute([$student['id'], $session, $term]);
         $comments = $stmt->fetch();
-
-        // Get position
-        $stmt = $pdo->prepare("
-            SELECT * FROM student_positions 
-            WHERE student_id = ? AND session = ? AND term = ?
-        ");
-        $stmt->execute([$student['id'], $session, $term]);
-        $position = $stmt->fetch();
 
         // Get affective traits
         $stmt = $pdo->prepare("
@@ -160,49 +236,108 @@ function exportClassData($session, $term, $class)
         $stmt->execute([$student['id'], $session, $term]);
         $psychomotor = $stmt->fetch();
 
-        // Prepare student data
+        // Calculate attendance
+        $days_present = $comments['days_present'] ?? 0;
+        $days_absent = $comments['days_absent'] ?? 0;
+        $days_school_opened = $settings['days_school_opened'] ?? 90;
+        $attendance_percentage = $days_school_opened > 0 ? round(($days_present / $days_school_opened) * 100, 1) : 0;
+
+        // Calculate age
+        $age = null;
+        if (!empty($student['date_of_birth'])) {
+            $age_years = floor((time() - strtotime($student['date_of_birth'])) / 31556926);
+            $age = $age_years;
+        }
+
+        // Prepare student data (same structure as generate_report_card)
         $students_data[] = [
             'admission_number' => $student['admission_number'],
             'full_name' => $student['full_name'],
             'class' => $student['class'],
             'gender' => $student['gender'] ?? null,
-            'date_of_birth' => $student['dob'] ?? null,
+            'date_of_birth' => $student['date_of_birth'] ?? null,
+            'age' => $age,
             'parent_phone' => $student['parent_phone'] ?? null,
             'parent_email' => $student['parent_email'] ?? null
         ];
 
-        // Prepare result data with ORIGINAL scores preserved
+        // Prepare result data - MATCHING generate_report_card.php structure EXACTLY
         $results_data[] = [
             'admission_number' => $student['admission_number'],
+            'full_name' => $student['full_name'],
             'session_year' => $session,
             'term' => $term,
-            'scores' => $formatted_scores,  // Contains original score_data
-            'class_position' => $position['class_position'] ?? null,
-            'class_total_students' => getClassTotal($pdo, $class, $session, $term),
-            'promoted_to' => $position['promoted_to'] ?? null,
-            'teachers_comment' => $comments['teachers_comment'] ?? null,
-            'principals_comment' => $comments['principals_comment'] ?? null,
-            'days_present' => $comments['days_present'] ?? 0,
-            'days_absent' => $comments['days_absent'] ?? 0,
+            'class' => $student['class'],
+
+            // Academic scores with full details
+            'scores' => $formatted_scores,
+
+            // Summary statistics
+            'summary' => [
+                'total_marks' => round($total_marks, 1),
+                'average' => round($overall_average, 1),
+                'grade' => $overall_grade,
+                'remark' => $overall_remark,
+                'subject_count' => $subject_count,
+                'highest_average' => round($highest_average, 1),
+                'lowest_average' => round($lowest_average, 1)
+            ],
+
+            // Position information
+            'position' => [
+                'class_position' => $position['class_position'] ?? null,
+                'class_total' => $class_total,
+                'subject_positions' => getSubjectPositions($pdo, $student['id'], $session, $term, $class)
+            ],
+
+            // Comments
+            'comments' => [
+                'teachers_comment' => $comments['teachers_comment'] ?? null,
+                'principals_comment' => $comments['principals_comment'] ?? null
+            ],
+
+            // Attendance
+            'attendance' => [
+                'days_present' => $days_present,
+                'days_absent' => $days_absent,
+                'days_school_opened' => $days_school_opened,
+                'attendance_percentage' => $attendance_percentage
+            ],
+
+            // Affective traits
             'affective_traits' => $affective ? [
-                'punctuality' => $affective['punctuality'],
-                'attendance' => $affective['attendance'],
-                'politeness' => $affective['politeness'],
-                'honesty' => $affective['honesty'],
-                'neatness' => $affective['neatness'],
-                'reliability' => $affective['reliability'],
-                'relationship' => $affective['relationship'],
-                'self_control' => $affective['self_control']
+                'punctuality' => $affective['punctuality'] ?? null,
+                'attendance' => $affective['attendance'] ?? null,
+                'politeness' => $affective['politeness'] ?? null,
+                'honesty' => $affective['honesty'] ?? null,
+                'neatness' => $affective['neatness'] ?? null,
+                'reliability' => $affective['reliability'] ?? null,
+                'relationship' => $affective['relationship'] ?? null,
+                'self_control' => $affective['self_control'] ?? null
             ] : null,
+
+            // Psychomotor skills
             'psychomotor_skills' => $psychomotor ? [
-                'handwriting' => $psychomotor['handwriting'],
-                'verbal_fluency' => $psychomotor['verbal_fluency'],
-                'sports' => $psychomotor['sports'],
-                'handling_tools' => $psychomotor['handling_tools'],
-                'drawing_painting' => $psychomotor['drawing_painting'],
-                'musical_skills' => $psychomotor['musical_skills']
+                'handwriting' => $psychomotor['handwriting'] ?? null,
+                'verbal_fluency' => $psychomotor['verbal_fluency'] ?? null,
+                'sports' => $psychomotor['sports'] ?? null,
+                'handling_tools' => $psychomotor['handling_tools'] ?? null,
+                'drawing_painting' => $psychomotor['drawing_painting'] ?? null,
+                'musical_skills' => $psychomotor['musical_skills'] ?? null
             ] : null,
-            'is_published' => true
+
+            // Settings for report card generation
+            'settings' => [
+                'score_types' => $score_types,
+                'max_score' => $settings['max_score'] ?? 100,
+                'grading_system' => $settings['grading_system'] ?? 'simple',
+                'next_resumption_date' => $settings['next_resumption_date'],
+                'current_resumption_date' => $settings['current_resumption_date'],
+                'current_closing_date' => $settings['current_closing_date']
+            ],
+
+            'is_published' => true,
+            'export_timestamp' => date('Y-m-d H:i:s')
         ];
 
         $processed++;
@@ -212,13 +347,21 @@ function exportClassData($session, $term, $class)
         return ['success' => false, 'error' => 'No valid student data to export'];
     }
 
-    // Prepare payload
+    // Prepare payload with FULL data structure
     $payload = [
         'api_key' => PORTAL_API_KEY,
         'school_code' => SCHOOL_CODE,
         'action' => 'sync_full',
         'students' => $students_data,
-        'results' => $results_data
+        'results' => $results_data,
+        'metadata' => [
+            'export_session' => $session,
+            'export_term' => $term,
+            'export_class' => $class,
+            'export_date' => date('Y-m-d H:i:s'),
+            'total_students' => count($students_data),
+            'total_results' => count($results_data)
+        ]
     ];
 
     // Debug logging
@@ -239,10 +382,14 @@ function exportClassData($session, $term, $class)
             'admission_number' => $results_data[0]['admission_number'],
             'session_year' => $results_data[0]['session_year'],
             'term' => $results_data[0]['term'],
+            'summary' => $results_data[0]['summary'],
             'scores_sample' => !empty($results_data[0]['scores']) ? array_map(function ($s) {
                 return [
                     'subject_name' => $s['subject_name'],
-                    'score_data' => $s['score_data']  // Shows the original structure
+                    'total_score' => $s['total_score'],
+                    'percentage' => $s['percentage'],
+                    'grade' => $s['grade'],
+                    'remark' => $s['remark']
                 ];
             }, array_slice($results_data[0]['scores'], 0, 2)) : null
         ] : null
@@ -296,6 +443,71 @@ function exportClassData($session, $term, $class)
     }
 }
 
+/**
+ * Get subject positions for a student
+ */
+function getSubjectPositions($pdo, $student_id, $session, $term, $class)
+{
+    $positions = [];
+
+    try {
+        // Get all subjects and their scores for this class
+        $stmt = $pdo->prepare("
+            SELECT 
+                sub.subject_name,
+                ss.subject_id,
+                ss.student_id,
+                ss.total_score
+            FROM student_scores ss
+            JOIN subjects sub ON ss.subject_id = sub.id
+            JOIN students s ON ss.student_id = s.id
+            WHERE s.class = ? AND ss.session = ? AND ss.term = ?
+            ORDER BY sub.subject_name, ss.total_score DESC
+        ");
+        $stmt->execute([$class, $session, $term]);
+        $all_scores = $stmt->fetchAll();
+
+        // Group by subject and calculate positions
+        $subject_scores = [];
+        foreach ($all_scores as $score) {
+            if (!isset($subject_scores[$score['subject_id']])) {
+                $subject_scores[$score['subject_id']] = [
+                    'name' => $score['subject_name'],
+                    'scores' => []
+                ];
+            }
+            $subject_scores[$score['subject_id']]['scores'][] = [
+                'student_id' => $score['student_id'],
+                'total_score' => $score['total_score']
+            ];
+        }
+
+        // Calculate position for each subject for this student
+        foreach ($subject_scores as $subject_id => $data) {
+            $position = 1;
+            $prev_score = null;
+            $rank = 1;
+
+            foreach ($data['scores'] as $index => $score_data) {
+                if ($score_data['total_score'] != $prev_score && $index > 0) {
+                    $rank = $position;
+                }
+                if ($score_data['student_id'] == $student_id) {
+                    $positions[$data['name']] = $rank;
+                    break;
+                }
+                $position++;
+                $prev_score = $score_data['total_score'];
+            }
+        }
+    } catch (Exception $e) {
+        // Log error but continue
+        error_log("Error getting subject positions: " . $e->getMessage());
+    }
+
+    return $positions;
+}
+
 function getClassTotal($pdo, $class, $session, $term)
 {
     $stmt = $pdo->prepare("
@@ -307,6 +519,32 @@ function getClassTotal($pdo, $class, $session, $term)
     $stmt->execute([$class, $session, $term]);
     $result = $stmt->fetch();
     return $result['total'] ?? 0;
+}
+
+/**
+ * Calculate grade based on percentage (matches generate_report_card.php)
+ */
+function calculateGrade($percentage)
+{
+    if ($percentage >= 70) return 'A';
+    if ($percentage >= 60) return 'B';
+    if ($percentage >= 50) return 'C';
+    if ($percentage >= 40) return 'D';
+    if ($percentage >= 30) return 'E';
+    return 'F';
+}
+
+/**
+ * Get performance remark (matches generate_report_card.php)
+ */
+function getPerformanceRemark($percentage)
+{
+    if ($percentage >= 70) return 'Excellent';
+    if ($percentage >= 60) return 'Very good';
+    if ($percentage >= 50) return 'Good';
+    if ($percentage >= 40) return 'Pass';
+    if ($percentage >= 30) return 'Poor';
+    return 'Fail';
 }
 
 function testPortalConnection()
@@ -340,748 +578,3 @@ function testPortalConnection()
         return ['success' => false, 'error' => "HTTP $httpCode: " . substr($response, 0, 200)];
     }
 }
-?>
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Export to Portal - <?php echo defined('SCHOOL_NAME') ? SCHOOL_NAME : 'School Management System'; ?></title>
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
-            --light-color: #ecf0f1;
-            --dark-color: #2c3e50;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: #f5f6fa;
-            color: #333;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 260px;
-            height: 100vh;
-            background: linear-gradient(180deg, var(--primary-color), var(--dark-color));
-            color: white;
-            padding: 20px 0;
-            z-index: 100;
-            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
-            overflow-y: auto;
-        }
-
-        .sidebar-content {
-            padding: 0 20px;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 30px;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--secondary-color);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .logo-text h3 {
-            font-size: 1.2rem;
-            margin-bottom: 2px;
-        }
-
-        .logo-text p {
-            font-size: 0.8rem;
-            opacity: 0.8;
-        }
-
-        .nav-links {
-            list-style: none;
-            margin-bottom: 30px;
-        }
-
-        .nav-links li {
-            margin-bottom: 5px;
-        }
-
-        .nav-links a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 15px;
-            color: rgba(255, 255, 255, 0.9);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            border-left: 3px solid transparent;
-            border-radius: 8px;
-        }
-
-        .nav-links a:hover,
-        .nav-links a.active {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border-left-color: var(--secondary-color);
-        }
-
-        .nav-links i {
-            width: 20px;
-            text-align: center;
-        }
-
-        .main-content {
-            margin-left: 260px;
-            padding: 20px;
-            min-height: 100vh;
-        }
-
-        .top-header {
-            background: white;
-            padding: 20px 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .header-title h1 {
-            color: var(--primary-color);
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-        }
-
-        .header-title p {
-            color: #666;
-            font-size: 0.95rem;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
-            margin-bottom: 30px;
-        }
-
-        .card h2 {
-            color: var(--primary-color);
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--primary-color);
-        }
-
-        .form-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid var(--light-color);
-            border-radius: 10px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--secondary-color);
-        }
-
-        .row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, var(--secondary-color), #2980b9);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-        }
-
-        .btn-secondary:hover {
-            box-shadow: 0 5px 15px rgba(127, 140, 141, 0.3);
-        }
-
-        .alert {
-            padding: 15px 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .alert-success {
-            background: #d5f4e6;
-            color: var(--success-color);
-            border-left: 4px solid var(--success-color);
-        }
-
-        .alert-error {
-            background: #fef2f2;
-            color: var(--danger-color);
-            border-left: 4px solid var(--danger-color);
-        }
-
-        .alert-info {
-            background: #e8f4fd;
-            color: var(--secondary-color);
-            border-left: 4px solid var(--secondary-color);
-        }
-
-        .alert-warning {
-            background: #fff8e1;
-            color: var(--warning-color);
-            border-left: 4px solid var(--warning-color);
-        }
-
-        .info-box {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-
-        .info-box h4 {
-            color: var(--primary-color);
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-
-        .info-box ul {
-            padding-left: 20px;
-            color: #666;
-        }
-
-        .info-box li {
-            margin-bottom: 8px;
-        }
-
-        .export-stats {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-
-        .export-stats h3 {
-            color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .stat-label {
-            font-weight: 500;
-            color: #555;
-        }
-
-        .stat-value {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-
-        .stat-value.success {
-            color: var(--success-color);
-        }
-
-        .stat-value.error {
-            color: var(--danger-color);
-        }
-
-        .error-list {
-            max-height: 200px;
-            overflow-y: auto;
-            margin-top: 15px;
-            padding: 10px;
-            background: #fff;
-            border-radius: 8px;
-            font-size: 0.85rem;
-        }
-
-        .error-item {
-            padding: 5px 0;
-            color: var(--danger-color);
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--secondary-color);
-            text-decoration: none;
-            font-weight: 500;
-            padding: 10px 20px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            background: white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .back-link:hover {
-            background: rgba(52, 152, 219, 0.1);
-            transform: translateX(-5px);
-        }
-
-        .config-warning {
-            background: #fff8e1;
-            border: 1px solid #ffd54f;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .config-warning i {
-            font-size: 48px;
-            color: var(--warning-color);
-            margin-bottom: 15px;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 992px) {
-            .sidebar {
-                width: 70px;
-                overflow: hidden;
-            }
-
-            .sidebar:hover {
-                width: 260px;
-            }
-
-            .logo-text,
-            .nav-links span {
-                display: none;
-            }
-
-            .sidebar:hover .logo-text,
-            .sidebar:hover .nav-links span {
-                display: block;
-            }
-
-            .main-content {
-                margin-left: 70px;
-            }
-
-            .sidebar:hover~.main-content {
-                margin-left: 260px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .main-content {
-                margin-left: 0;
-                padding: 15px;
-            }
-
-            .sidebar {
-                transform: translateX(-100%);
-                width: 280px;
-            }
-
-            .sidebar.active {
-                transform: translateX(0);
-            }
-
-            .row {
-                grid-template-columns: 1fr;
-            }
-
-            .top-header {
-                padding: 20px;
-            }
-
-            .header-title h1 {
-                font-size: 1.5rem;
-            }
-
-            .card {
-                padding: 20px;
-            }
-        }
-
-        .mobile-menu-btn {
-            display: none;
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 101;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 10px;
-            font-size: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        @media (max-width: 768px) {
-            .mobile-menu-btn {
-                display: block;
-            }
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 0.6s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-        }
-    </style>
-</head>
-
-<body>
-    <!-- Mobile Menu Button -->
-    <button class="mobile-menu-btn" id="mobileMenuBtn">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-content">
-            <div class="logo">
-                <div class="logo-icon">
-                    <i class="fas fa-graduation-cap"></i>
-                </div>
-                <div class="logo-text">
-                    <h3><?php echo defined('SCHOOL_NAME') ? SCHOOL_NAME : 'School Management System'; ?></h3>
-                    <p>Admin Panel</p>
-                </div>
-            </div>
-
-            <ul class="nav-links">
-                <li><a href="report_card_dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="export_to_portal.php" class="active"><i class="fas fa-cloud-upload-alt"></i> Export to Portal</a></li>
-                <li><a href="report_card_dashboard.php"><i class="fas fa-file-contract"></i> Report Cards</a></li>
-                <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-content">
-        <div class="top-header">
-            <div class="header-title">
-                <h1><i class="fas fa-cloud-upload-alt"></i> Export to MyResultChecker Portal</h1>
-                <p>Upload student data and results to the central result checking portal</p>
-            </div>
-        </div>
-
-        <div class="container">
-            <?php if (empty(PORTAL_API_KEY) || PORTAL_API_KEY === 'YOUR_SCHOOL_API_KEY'): ?>
-                <div class="config-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <h3>Portal Integration Not Configured</h3>
-                    <p>Please contact your system administrator to get API credentials for MyResultChecker portal.</p>
-                    <p style="margin-top: 10px; font-size: 0.85rem;">You need to add the following to your config.php file:</p>
-                    <code style="display: inline-block; margin-top: 10px; padding: 10px; background: #f0f0f0; border-radius: 5px;">
-                        define('PORTAL_API_URL', 'https://impactdigitalacademy.com.ng/result-checker/api/sync.php');<br>
-                        define('PORTAL_API_KEY', 'YOUR_SCHOOL_API_KEY');<br>
-                        define('SCHOOL_CODE', 'YOUR_SCHOOL_CODE');
-                    </code>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($export_error): ?>
-                <div class="alert alert-error">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span><?php echo htmlspecialchars($export_error); ?></span>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($export_success): ?>
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i>
-                    <span>Export completed successfully!</span>
-                </div>
-
-                <div class="export-stats">
-                    <h3><i class="fas fa-chart-bar"></i> Export Summary</h3>
-                    <div class="stat-row">
-                        <span class="stat-label">Students Exported:</span>
-                        <span class="stat-value success"><?php echo $export_success['students_count']; ?></span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Results Exported:</span>
-                        <span class="stat-value success"><?php echo $export_success['results_count']; ?></span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Successfully Processed:</span>
-                        <span class="stat-value success"><?php echo $export_success['processed']; ?></span>
-                    </div>
-                    <?php if ($export_success['failed'] > 0): ?>
-                        <div class="stat-row">
-                            <span class="stat-label">Failed:</span>
-                            <span class="stat-value error"><?php echo $export_success['failed']; ?></span>
-                        </div>
-                        <?php if (!empty($export_success['errors'])): ?>
-                            <div class="error-list">
-                                <?php foreach ($export_success['errors'] as $error): ?>
-                                    <div class="error-item">
-                                        <i class="fas fa-times-circle"></i> <?php echo htmlspecialchars($error); ?>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
-
-            <div class="card">
-                <h2><i class="fas fa-upload"></i> Export Student Results</h2>
-
-                <form method="POST" action="" id="exportForm">
-                    <div class="row">
-                        <div class="form-group">
-                            <label><i class="fas fa-calendar-alt"></i> Academic Session</label>
-                            <select name="session" required>
-                                <option value="">Select Session</option>
-                                <?php foreach ($sessions as $s): ?>
-                                    <option value="<?php echo htmlspecialchars($s['session']); ?>"
-                                        <?php echo (isset($_POST['session']) && $_POST['session'] === $s['session']) ? 'selected' : ''; ?>
-                                        <?php echo (!isset($_POST['session']) && $s['session'] === $current_session) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($s['session']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label><i class="fas fa-chalkboard"></i> Term</label>
-                            <select name="term" required>
-                                <option value="">Select Term</option>
-                                <option value="First" <?php echo (isset($_POST['term']) && $_POST['term'] === 'First') ? 'selected' : ''; ?>>First Term</option>
-                                <option value="Second" <?php echo (isset($_POST['term']) && $_POST['term'] === 'Second') ? 'selected' : ''; ?>>Second Term</option>
-                                <option value="Third" <?php echo (isset($_POST['term']) && $_POST['term'] === 'Third') ? 'selected' : ''; ?>>Third Term</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label><i class="fas fa-users"></i> Class</label>
-                            <select name="class" required>
-                                <option value="">Select Class</option>
-                                <?php foreach ($classes as $c): ?>
-                                    <option value="<?php echo htmlspecialchars($c['class']); ?>"
-                                        <?php echo (isset($_POST['class']) && $_POST['class'] === $c['class']) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($c['class']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <button type="submit" class="btn" id="exportBtn">
-                            <i class="fas fa-cloud-upload-alt"></i> Export to Portal
-                        </button>
-                        <button type="button" class="btn btn-secondary" id="testConnectionBtn" onclick="testConnection()">
-                            <i class="fas fa-plug"></i> Test Connection
-                        </button>
-                    </div>
-                </form>
-
-                <div class="info-box">
-                    <h4><i class="fas fa-info-circle"></i> What gets exported?</h4>
-                    <ul>
-                        <li><strong>Student Information:</strong> Name, admission number, class, gender, date of birth, parent contacts</li>
-                        <li><strong>Academic Scores:</strong> CA1, CA2, Exam scores for all subjects</li>
-                        <li><strong>Teacher Comments:</strong> Teacher's and Principal's remarks</li>
-                        <li><strong>Affective Traits:</strong> Punctuality, attendance, politeness, honesty, neatness, etc.</li>
-                        <li><strong>Psychomotor Skills:</strong> Handwriting, verbal fluency, sports, drawing, etc.</li>
-                        <li><strong>Class Position:</strong> Student ranking within the class</li>
-                        <li><strong>Promotion Status:</strong> Promoted to next class</li>
-                    </ul>
-                </div>
-
-                <div class="info-box" style="margin-top: 15px; background: #e8f4fd;">
-                    <h4><i class="fas fa-shield-alt"></i> Important Notes</h4>
-                    <ul>
-                        <li>Only students with scores will be exported</li>
-                        <li>Classes are automatically created in the portal if they don't exist</li>
-                        <li>Students are updated if they already exist (based on admission number)</li>
-                        <li>Results are stored and made available for parents to check using PINs</li>
-                        <li>This process may take a few moments depending on the number of students</li>
-                    </ul>
-                </div>
-            </div>
-
-            <a href="index.php" class="back-link">
-                <i class="fas fa-arrow-left"></i> Back to Dashboard
-            </a>
-        </div>
-    </div>
-
-    <script>
-        // Mobile menu toggle
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const sidebar = document.getElementById('sidebar');
-
-        mobileMenuBtn.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-        });
-
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function(event) {
-            if (window.innerWidth <= 768) {
-                if (!sidebar.contains(event.target) && !mobileMenuBtn.contains(event.target)) {
-                    sidebar.classList.remove('active');
-                }
-            }
-        });
-
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 768) {
-                sidebar.classList.remove('active');
-            }
-        });
-
-        // Test connection function
-        async function testConnection() {
-            const testBtn = document.getElementById('testConnectionBtn');
-            const originalHtml = testBtn.innerHTML;
-
-            testBtn.innerHTML = '<span class="loading"></span> Testing...';
-            testBtn.disabled = true;
-
-            try {
-                const response = await fetch('ajax_test_connection.php');
-                const data = await response.json();
-
-                if (data.success) {
-                    showAlert('success', 'Connection successful! ' + (data.message || 'Portal is reachable.'));
-                } else {
-                    showAlert('error', 'Connection failed: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                showAlert('error', 'Network error: ' + error.message);
-            } finally {
-                testBtn.innerHTML = originalHtml;
-                testBtn.disabled = false;
-            }
-        }
-
-        function showAlert(type, message) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type}`;
-            alertDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i><span>${message}</span>`;
-
-            const container = document.querySelector('.container');
-            const firstCard = document.querySelector('.card');
-            container.insertBefore(alertDiv, firstCard);
-
-            setTimeout(() => {
-                alertDiv.style.opacity = '0';
-                setTimeout(() => alertDiv.remove(), 300);
-            }, 5000);
-        }
-
-        // Form submission handling
-        const exportForm = document.getElementById('exportForm');
-        const exportBtn = document.getElementById('exportBtn');
-
-        exportForm.addEventListener('submit', function() {
-            exportBtn.innerHTML = '<span class="loading"></span> Exporting...';
-            exportBtn.disabled = true;
-        });
-
-        // Auto-hide existing alerts
-        setTimeout(() => {
-            document.querySelectorAll('.alert').forEach(alert => {
-                alert.style.opacity = '0';
-                setTimeout(() => alert.remove(), 300);
-            });
-        }, 5000);
-    </script>
-</body>
-
-</html>
